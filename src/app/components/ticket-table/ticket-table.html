@@ -1,0 +1,263 @@
+<div class="space-y-3 sm:space-y-4">
+  <!-- Top bar: Search (left) + Filter dropdowns (right) -->
+  <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+    <input
+      [(ngModel)]="searchText"
+      (input)="applyFilters()"
+      placeholder="Search..."
+      class="flex-1 min-w-0 sm:w-48 sm:flex-none border border-slate-300 rounded px-2 sm:px-3 py-2 text-xs sm:text-sm bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
+    />
+
+    <div class="relative shrink-0 sm:ml-auto">
+      <!-- Filter Button -->
+      <button (click)="toggleFilter()"
+              class="relative flex items-center justify-center w-10 h-10 text-slate-500 hover:text-slate-700 transition-colors group">
+        <svg *ngIf="activeFilterCount === 0" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-105 transition-transform">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+        </svg>
+        <svg *ngIf="activeFilterCount > 0" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-105 transition-transform text-slate-800">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" fill="currentColor" fill-opacity="0.15"/>
+        </svg>
+        <!-- Active badge -->
+        <span *ngIf="activeFilterCount > 0" class="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-slate-700 text-white text-[10px] font-bold leading-none shadow-sm">{{ activeFilterCount }}</span>
+      </button>
+
+      <!-- Filter Dropdown -->
+      <div *ngIf="filterOpen"
+           class="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 z-50 p-4 space-y-3">
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+          <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+            </svg>
+            <span class="text-sm font-semibold text-slate-700">Filters</span>
+          </div>
+          <button (click)="filterOpen = false"
+                  class="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded p-1 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Status -->
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1.5">Status</label>
+          <app-custom-select
+            [options]="statusOptions"
+            placeholder="All Statuses"
+            [(value)]="filterStatus"
+            (valueChange)="applyFilters()"
+          ></app-custom-select>
+        </div>
+
+        <!-- Severity -->
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1.5">Severity</label>
+          <app-custom-select
+            [options]="severityOptions"
+            placeholder="All Severities"
+            [(value)]="filterSeverity"
+            (valueChange)="applyFilters()"
+          ></app-custom-select>
+        </div>
+
+        <!-- Service -->
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1.5">Service</label>
+          <app-custom-select
+            [options]="serviceOptions"
+            placeholder="All Services"
+            [(value)]="filterService"
+            (valueChange)="applyFilters()"
+          ></app-custom-select>
+        </div>
+
+        <!-- Footer -->
+        <div class="border-t border-slate-100 pt-2.5 flex items-center justify-between">
+          <button (click)="clearFilters()"
+                  class="text-xs text-slate-400 hover:text-slate-600 transition-colors px-2 py-1 rounded hover:bg-slate-50">
+            Clear All
+          </button>
+          <div class="text-[11px] text-slate-400">
+            <span *ngIf="activeFilterCount === 0">No filters active</span>
+            <span *ngIf="activeFilterCount === 1">1 filter active</span>
+            <span *ngIf="activeFilterCount > 1">{{ activeFilterCount }} filters active</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-x-auto border border-gray-200 rounded shadow-sm">
+    <table class="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
+      <thead class="bg-gray-50">
+        <tr>
+          <th (click)="setSort('id')" class="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-600 cursor-pointer hover:bg-gray-100 select-none whitespace-nowrap">
+            Ticket ID
+          </th>
+          <th (click)="setSort('title')" class="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-600 cursor-pointer hover:bg-gray-100 select-none">
+            Title
+          </th>
+          <th (click)="setSort('service')" class="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-600 cursor-pointer hover:bg-gray-100 select-none whitespace-nowrap">
+            Service
+          </th>
+          <th (click)="setSort('subCategory')" class="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-600 cursor-pointer hover:bg-gray-100 select-none whitespace-nowrap">
+            Sub-Category
+          </th>
+          <th (click)="setSort('status')" class="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-600 cursor-pointer hover:bg-gray-100 select-none">
+            Status
+          </th>
+          <th (click)="setSort('severity')" class="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-600 cursor-pointer hover:bg-gray-100 select-none whitespace-nowrap">
+            Severity
+          </th>
+          <th (click)="setSort('dateReported')" class="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-600 cursor-pointer hover:bg-gray-100 select-none whitespace-nowrap">
+            Date
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 bg-white">
+        <tr *ngFor="let t of filteredTickets"
+            (click)="viewTicket(t)"
+            class="hover:bg-blue-50 cursor-pointer transition-colors">
+          <td class="px-2 sm:px-4 py-2 sm:py-3 font-mono text-xs text-gray-500 whitespace-nowrap align-middle">{{ t.id | slice:-6 }}</td>
+          <td class="px-2 sm:px-4 py-2 sm:py-3 font-medium text-gray-900 max-w-[120px] sm:max-w-xs truncate align-middle">{{ t.title }}</td>
+          <td class="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap align-middle relative group">
+            <div class="flex items-center gap-1.5">
+              <span class="text-gray-700">{{ t.service }}</span>
+              <button class="quick-edit-trigger opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-600"
+                      (click)="startQuickEdit(t, 'service', $event)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+            </div>
+            <!-- Quick-edit dropdown -->
+            <div *ngIf="editingField?.ticketId === t.id && editingField?.field === 'service'"
+                 class="quick-edit-dropdown fixed z-50 bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 py-1 min-w-[180px]"
+                 [style.top.px]="editingField.top"
+                 [style.right.px]="editingField.right"
+                 [style.width.px]="editingField.width"
+                 (click)="$event.stopPropagation()">
+              <div *ngFor="let opt of getQuickEditOptions(t, 'service')"
+                   class="px-3 py-2 text-sm text-gray-700 cursor-pointer hover:bg-slate-100 transition-colors"
+                   [class.font-medium]="opt === t.service"
+                   (click)="quickEditValue(t, 'service', opt); $event.stopPropagation()">
+                {{ opt }}
+              </div>
+            </div>
+          </td>
+          <td class="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap align-middle relative group">
+            <div class="flex items-center gap-1.5">
+              <span class="text-gray-500">{{ t.subCategory || '—' }}</span>
+              <button *ngIf="getQuickEditOptions(t, 'subCategory').length > 0"
+                      class="quick-edit-trigger opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-600"
+                      (click)="startQuickEdit(t, 'subCategory', $event)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+            </div>
+            <!-- Quick-edit dropdown -->
+            <div *ngIf="editingField?.ticketId === t.id && editingField?.field === 'subCategory'"
+                 class="quick-edit-dropdown fixed z-50 bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 py-1 min-w-[180px]"
+                 [style.top.px]="editingField.top"
+                 [style.right.px]="editingField.right"
+                 [style.width.px]="editingField.width"
+                 (click)="$event.stopPropagation()">
+              <div *ngFor="let opt of getQuickEditOptions(t, 'subCategory')"
+                   class="px-3 py-2 text-sm text-gray-700 cursor-pointer hover:bg-slate-100 transition-colors"
+                   [class.font-medium]="opt === t.subCategory"
+                   (click)="quickEditValue(t, 'subCategory', opt); $event.stopPropagation()">
+                {{ opt }}
+              </div>
+            </div>
+          </td>
+          <td class="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap align-middle relative group">
+            <div class="flex items-center gap-1.5">
+              <span class="inline-flex items-center justify-center leading-none px-1.5 sm:px-2.5 py-0.5 rounded text-xs font-medium {{ getStatusClass(t.status) }}">{{ t.status }}</span>
+              <button class="quick-edit-trigger opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-600"
+                      (click)="startQuickEdit(t, 'status', $event)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+            </div>
+            <!-- Quick-edit dropdown -->
+            <div *ngIf="editingField?.ticketId === t.id && editingField?.field === 'status'"
+                 class="quick-edit-dropdown fixed z-50 bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 py-1 min-w-[180px]"
+                 [style.top.px]="editingField.top"
+                 [style.right.px]="editingField.right"
+                 [style.width.px]="editingField.width"
+                 (click)="$event.stopPropagation()">
+              <div *ngFor="let opt of getQuickEditOptions(t, 'status')"
+                   class="px-3 py-2 text-sm text-gray-700 cursor-pointer hover:bg-slate-100 transition-colors"
+                   [class.font-medium]="opt === t.status"
+                   (click)="quickEditValue(t, 'status', opt); $event.stopPropagation()">
+                {{ opt }}
+              </div>
+            </div>
+          </td>
+          <td class="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap align-middle relative group">
+            <div class="flex items-center gap-1.5">
+              <span class="inline-flex items-center justify-center leading-none px-1.5 sm:px-2.5 py-0.5 rounded text-xs font-medium {{ getSeverityClass(t.severity) }}">{{ t.severity }}</span>
+              <button class="quick-edit-trigger opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-600"
+                      (click)="startQuickEdit(t, 'severity', $event)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+            </div>
+            <!-- Quick-edit dropdown -->
+            <div *ngIf="editingField?.ticketId === t.id && editingField?.field === 'severity'"
+                 class="quick-edit-dropdown fixed z-50 bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 py-1 min-w-[180px]"
+                 [style.top.px]="editingField.top"
+                 [style.right.px]="editingField.right"
+                 [style.width.px]="editingField.width"
+                 (click)="$event.stopPropagation()">
+              <div *ngFor="let opt of getQuickEditOptions(t, 'severity')"
+                   class="px-3 py-2 text-sm text-gray-700 cursor-pointer hover:bg-slate-100 transition-colors"
+                   [class.font-medium]="opt === t.severity"
+                   (click)="quickEditValue(t, 'severity', opt); $event.stopPropagation()">
+                {{ opt }}
+              </div>
+            </div>
+          </td>
+          <td class="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-gray-500 whitespace-nowrap align-middle">{{ t.dateReported | date:'mediumDate' }}</td>
+        </tr>
+        <tr *ngIf="filteredTickets.length === 0">
+          <td colspan="7" class="px-4 py-8 sm:py-12 text-center text-gray-400 text-xs sm:text-sm">
+            No tickets found. Select a workspace and create your first ticket!
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Bottom bar: New Ticket (left) + Ticket count (right) -->
+  <div class="flex flex-col sm:flex-row items-center justify-between gap-2">
+    <button
+      (click)="addTicket()"
+      class="w-full sm:w-auto px-4 py-2 bg-slate-700 text-white text-sm font-medium rounded hover:bg-slate-800 transition-colors whitespace-nowrap inline-flex items-center justify-center"
+    >
+      <span class="sm:hidden leading-none">＋</span><span class="hidden sm:inline">+ New Ticket</span>
+    </button>
+
+    <div class="text-xs sm:text-sm text-gray-500">
+      Showing {{ filteredTickets.length }} of {{ tickets.length }} tickets
+    </div>
+  </div>
+</div>
+
+<!-- Ticket Dialog -->
+<app-ticket-dialog
+  *ngIf="showDialog"
+  [ticket]="selectedTicket"
+  (close)="onDialogClose()"
+></app-ticket-dialog>

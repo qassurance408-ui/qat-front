@@ -1,0 +1,175 @@
+<!-- Empty state: just a +New button -->
+<div *ngIf="workspaces.length === 0" class="flex items-center">
+  <button (click)="openCreateDialog()"
+          class="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-slate-700 rounded hover:bg-slate-800 transition-colors whitespace-nowrap">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    New Workspace
+  </button>
+</div>
+
+<!-- Workspace selector (when workspaces exist) -->
+<div *ngIf="workspaces.length > 0">
+  <!-- Kebab menu -->
+  <div class="relative">
+    <button (click)="toggleKebab($event)"
+            class="flex items-center justify-center w-9 h-9 text-slate-400 hover:text-slate-600 transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+      </svg>
+    </button>
+
+    <!-- Kebab dropdown -->
+    <div *ngIf="showKebab"
+         class="absolute right-0 top-full mt-1.5 w-52 max-w-[calc(100vw-1.5rem)] bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 z-50 py-1 overflow-y-auto">
+      <!-- Main menu -->
+      <ng-container *ngIf="!showSwitchSubmenu">
+        <button (click)="goHome()"
+                class="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2.5 truncate">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 shrink-0">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          Home
+        </button>
+        <hr class="my-1 border-slate-100">
+        <button (click)="openCreateDialog()"
+                class="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2.5 truncate">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 shrink-0">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          New Workspace
+        </button>
+        <button (click)="openSwitchSubmenu()"
+                class="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2.5 truncate">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 shrink-0">
+            <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 0 0 4.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 0 1-15.357-2m15.357 2H15"/>
+          </svg>
+          Switch Workspace
+        </button>
+        <button (click)="exportWorkspace()"
+                class="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2.5 truncate"
+                [class.text-slate-400]="!activeWorkspace">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 shrink-0">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Export
+        </button>
+        <hr class="my-1 border-slate-100">
+        <button (click)="openDeleteConfirm()"
+                class="w-full text-left px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors flex items-center gap-2.5 truncate"
+                [class.opacity-50]="!activeWorkspace">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+          Delete Workspace
+        </button>
+      </ng-container>
+
+      <!-- Workspace switcher submenu -->
+      <ng-container *ngIf="showSwitchSubmenu">
+        <button (click)="goBackToMainMenu()"
+                class="w-full text-left px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-2 truncate border-b border-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-slate-400">
+            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Back
+        </button>
+        <div class="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Switch Workspace</div>
+        <button *ngFor="let ws of workspaces"
+                (click)="selectWorkspace(ws)"
+                class="w-full text-left px-3 py-2 text-sm transition-colors flex items-center gap-2"
+                [class.text-slate-700]="ws.id !== activeWorkspace?.id"
+                [class.text-slate-900]="ws.id === activeWorkspace?.id"
+                [class.bg-slate-50]="ws.id === activeWorkspace?.id"
+                [class.hover:bg-slate-50]="ws.id !== activeWorkspace?.id">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               class="shrink-0"
+               [class.text-slate-300]="ws.id !== activeWorkspace?.id"
+               [class.text-slate-500]="ws.id === activeWorkspace?.id">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span class="truncate">{{ ws.name }}</span>
+          <svg *ngIf="ws.id === activeWorkspace?.id" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ml-auto shrink-0 text-slate-500">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </button>
+      </ng-container>
+    </div>
+  </div>
+</div>
+
+<!-- Workspace Creation Dialog -->
+<div *ngIf="showCreate" class="fixed inset-0 z-50">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/40" (click)="showCreate = false"></div>
+
+  <!-- Centered dialog -->
+  <div class="relative z-10 flex items-center justify-center min-h-screen p-4 pointer-events-none">
+    <div class="bg-white sm:rounded shadow-2xl w-full max-w-md mx-auto overflow-y-auto pointer-events-auto">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900">Create Workspace</h2>
+        <button (click)="showCreate = false"
+          class="text-gray-400 hover:text-gray-600 text-xl leading-none px-2">
+          &times;
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="px-4 sm:px-6 py-4">
+        <input
+          [(ngModel)]="newWorkspaceName"
+          (keyup.enter)="createWorkspace()"
+          placeholder="Workspace name..."
+          class="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
+          autofocus
+        />
+      </div>
+
+      <!-- Footer -->
+      <div class="flex items-center justify-end gap-2 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50 rounded-b">
+        <button (click)="showCreate = false"
+          class="px-4 py-2 text-sm text-gray-700 border border-slate-300 rounded hover:bg-slate-100 transition-colors">
+          Cancel
+        </button>
+        <button (click)="createWorkspace()"
+          class="px-4 py-2 text-sm bg-slate-700 text-white rounded hover:bg-slate-800 transition-colors">
+          Create
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Dialog -->
+<div *ngIf="showDeleteConfirm" class="fixed inset-0 z-50">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/40" (click)="showDeleteConfirm = false"></div>
+
+  <!-- Centered dialog -->
+  <div class="relative z-10 flex items-center justify-center min-h-screen p-4 pointer-events-none">
+    <div class="bg-white sm:rounded shadow-2xl w-full max-w-sm mx-auto overflow-hidden pointer-events-auto">
+      <!-- Body -->
+      <div class="px-6 sm:px-8 pt-6 sm:pt-8 pb-4 text-center">
+        <h2 class="text-lg font-semibold text-gray-900 mb-2">Delete {{ activeWorkspace?.name }}</h2>
+        <p class="text-sm text-gray-500">
+          This will permanently delete this workspace and remove all tickets inside it. This action cannot be undone.
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div class="flex items-center justify-end gap-2 px-6 sm:px-8 py-4 border-t border-gray-100 bg-gray-50/50">
+        <button (click)="showDeleteConfirm = false"
+          class="px-4 py-2 text-sm text-gray-700 border border-slate-200 rounded hover:bg-slate-100 transition-colors">
+          Cancel
+        </button>
+        <button (click)="confirmDelete()"
+          class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded hover:bg-red-700 transition-colors">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

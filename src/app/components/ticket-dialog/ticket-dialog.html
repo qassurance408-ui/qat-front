@@ -1,0 +1,261 @@
+<!-- Backdrop -->
+<div class="fixed inset-0 bg-black/40 z-40" (click)="close.emit()"></div>
+
+<!-- Dialog -->
+<div class="fixed inset-0 z-50 flex items-start sm:items-center justify-center pt-0 sm:pt-8 pb-0 sm:pb-8">
+  <div class="bg-white sm:rounded shadow-2xl w-full max-w-3xl sm:mx-4 h-screen h-[100dvh] sm:h-auto sm:min-h-0 sm:max-h-[calc(100vh-4rem)] flex flex-col pb-1 sm:pb-0">
+    <!-- Header (always visible at top) -->
+    <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 sm:rounded-t shrink-0">
+      <h2 class="text-lg font-semibold text-gray-900 relative min-w-0">
+        <!-- Default heading (in flow → gives h2 its height) -->
+        <span class="transition-opacity duration-200"
+              [class.opacity-0]="headerScrolled && !isNew && !isEditing">
+          {{ isNew ? 'New Ticket' : (isEditing ? 'Edit Ticket' : 'Ticket Details') }}
+        </span>
+        <!-- Scrolled heading: ticket name + status (absolute overlay) -->
+        <span *ngIf="!isNew && !isEditing"
+              class="absolute inset-0 flex items-center gap-2 transition-opacity duration-200"
+              [class.opacity-0]="!headerScrolled">
+          <span class="truncate max-w-[180px] sm:max-w-[300px]">{{ formTitle }}</span>
+          <span class="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded text-xs font-medium shrink-0 {{ getStatusClass(formStatus) }}">{{ formStatus }}</span>
+        </span>
+      </h2>
+      <div class="flex items-center gap-2">
+        <button
+          *ngIf="!isEditing && !isNew"
+          (click)="startEditing()"
+          class="text-slate-400 hover:text-slate-600 transition-colors inline-flex items-center justify-center p-1"
+          title="Edit">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+        <button
+          (click)="close.emit()"
+          class="text-gray-400 hover:text-gray-600 text-xl leading-none px-2"
+        >
+          &times;
+        </button>
+      </div>
+    </div>
+
+    <!-- Scrollable body -->
+    <div #dialogBody class="flex-1 overflow-y-auto px-4 sm:px-6 py-3 sm:py-4 space-y-4 sm:space-y-5" (scroll)="onDialogScroll($event)">
+      <!-- Storage Warning -->
+      <div *ngIf="storageWarning" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+        {{ storageWarning }}
+      </div>
+
+      <!-- Row: Ticket ID (view only) -->
+      <div *ngIf="!isNew" class="text-xs text-gray-400 font-mono">
+        ID: {{ ticket?.id }}
+      </div>
+
+      <!-- Title -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+        <div *ngIf="!isEditing" class="text-gray-900 font-medium break-words">{{ formTitle }}</div>
+        <input *ngIf="isEditing" [(ngModel)]="formTitle" type="text" required
+          class="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
+          placeholder="Brief title describing the issue" />
+      </div>
+
+      <!-- Row: Status, Severity, Service -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <!-- Status -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <div *ngIf="!isEditing">
+            <span class="inline-flex items-center justify-center leading-none px-2.5 py-0.5 rounded text-xs font-medium {{ getStatusClass(formStatus) }}">{{ formStatus }}</span>
+          </div>
+          <app-custom-select *ngIf="isEditing"
+            [options]="statusOptions"
+            [(value)]="formStatus"
+            class="w-full"
+          ></app-custom-select>
+        </div>
+
+        <!-- Severity -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Severity</label>
+          <div *ngIf="!isEditing">
+            <span class="inline-flex items-center justify-center leading-none px-2.5 py-0.5 rounded text-xs font-medium {{ getSeverityClass(formSeverity) }}">{{ formSeverity }}</span>
+          </div>
+          <app-custom-select *ngIf="isEditing"
+            [options]="severityOptions"
+            [(value)]="formSeverity"
+            class="w-full"
+          ></app-custom-select>
+        </div>
+
+        <!-- Service/Category -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Service / Category</label>
+          <div *ngIf="!isEditing" class="text-gray-900 break-words">{{ formService }}</div>
+          <app-custom-select *ngIf="isEditing"
+            [options]="serviceOptions"
+            [(value)]="formService"
+            (valueChange)="onServiceChange()"
+            class="w-full"
+          ></app-custom-select>
+        </div>
+      </div>
+
+      <!-- Conditional Sub-Category -->
+      <div *ngIf="subCategoryOptions">
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          {{ formService === 'VPS' ? 'OS Image' : (formService === 'App Deployment' ? 'Framework' : (formService === 'Databases' ? 'Engine' : 'Sub-Category')) }}
+        </label>
+        <div *ngIf="!isEditing" class="text-gray-900 break-words">{{ formSubCategory || '—' }}</div>
+        <app-custom-select *ngIf="isEditing"
+          [options]="subCategoryOptions"
+          [(value)]="formSubCategory"
+          placeholder="Select..."
+          class="w-full"
+        ></app-custom-select>
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Detailed Description</label>
+        <div *ngIf="!isEditing" class="text-gray-900 whitespace-pre-wrap break-words">{{ formDescription || '—' }}</div>
+        <textarea *ngIf="isEditing" [(ngModel)]="formDescription" rows="3"
+          class="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
+          placeholder="Full description of the issue"></textarea>
+      </div>
+
+      <!-- What Was Observed -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">What Was Observed</label>
+        <div *ngIf="!isEditing" class="text-gray-900 whitespace-pre-wrap break-words">{{ formObserved || '—' }}</div>
+        <textarea *ngIf="isEditing" [(ngModel)]="formObserved" rows="3"
+          class="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
+          placeholder="What did you observe during testing?"></textarea>
+      </div>
+
+      <!-- Steps to Reproduce -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Steps to Reproduce</label>
+        <div *ngIf="!isEditing" class="text-gray-900 whitespace-pre-wrap break-words">{{ formSteps || '—' }}</div>
+        <textarea *ngIf="isEditing" [(ngModel)]="formSteps" rows="4"
+          class="w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
+          placeholder="1. Navigate to...
+2. Click on...
+3. Observe that..."></textarea>
+      </div>
+
+      <!-- Expected vs Actual -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Expected Outcome</label>
+          <div *ngIf="!isEditing" class="text-gray-900 whitespace-pre-wrap break-words">{{ formExpected || '—' }}</div>
+          <textarea *ngIf="isEditing" [(ngModel)]="formExpected" rows="3"
+            class="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
+            placeholder="What should have happened?"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Actual Outcome</label>
+          <div *ngIf="!isEditing" class="text-gray-900 whitespace-pre-wrap break-words">{{ formActual || '—' }}</div>
+          <textarea *ngIf="isEditing" [(ngModel)]="formActual" rows="3"
+            class="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
+            placeholder="What actually happened?"></textarea>
+        </div>
+      </div>
+
+      <!-- Root Cause -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Possible Issue / Root Cause</label>
+        <div *ngIf="!isEditing" class="text-gray-900 whitespace-pre-wrap break-words">{{ formRootCause || '—' }}</div>
+        <textarea *ngIf="isEditing" [(ngModel)]="formRootCause" rows="3"
+          class="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
+          placeholder="What might be causing this issue?"></textarea>
+      </div>
+
+      <!-- Environment -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Environment / Config</label>
+        <div *ngIf="!isEditing" class="text-gray-900 whitespace-pre-wrap break-words">{{ formEnvironment || '—' }}</div>
+        <textarea *ngIf="isEditing" [(ngModel)]="formEnvironment" rows="3"
+          class="w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
+          placeholder="Node version, CLI version, deployment path type, OS details..."></textarea>
+      </div>
+
+      <!-- Attachments -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Attachments</label>
+        <div *ngIf="!isEditing && formAttachments.length === 0" class="text-gray-500 text-sm">No attachments</div>
+        <div *ngIf="formAttachments.length > 0" class="space-y-2 mb-3">
+          <div *ngFor="let att of formAttachments; let i = index"
+            class="flex items-center justify-between bg-slate-50 rounded px-3 py-2 text-sm">
+            <div class="flex items-center gap-2 min-w-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 shrink-0">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              </svg>
+              <span class="text-slate-700 truncate">{{ att.name }}</span>
+              <span class="text-slate-400 text-xs">({{ formatFileSize(att.size) }})</span>
+              <a [href]="att.data" [download]="att.name"
+                class="text-slate-500 hover:text-slate-700 underline text-xs ml-2">Preview</a>
+            </div>
+            <button *ngIf="isEditing" (click)="removeAttachment(i)"
+              class="text-slate-400 hover:text-slate-600 text-lg leading-none px-1.5">
+              &times;
+            </button>
+          </div>
+        </div>
+        <div *ngIf="isEditing">
+          <label class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded cursor-pointer hover:bg-gray-200 transition-colors text-sm">
+            <span>+ Add File</span>
+            <input type="file" multiple (change)="onFileSelected($event)" class="hidden" accept="image/*,.txt,.log,.md,.csv" />
+          </label>
+          <p class="text-xs text-gray-400 mt-1">Max 500KB per file. Accepted: images, .txt, .log, .md, .csv</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b gap-2 sm:gap-0">
+      <div class="w-full sm:w-auto order-2 sm:order-1">
+        <button *ngIf="isEditing && !isNew" (click)="deleteTicket()"
+          class="w-full sm:w-auto px-4 py-2 text-sm text-rose-600 border border-rose-300 rounded hover:bg-rose-50 transition-colors inline-flex items-center justify-center">
+          Delete Ticket
+        </button>
+      </div>
+      <div class="flex items-center gap-2 w-full sm:w-auto order-1 sm:order-2">
+        <button (click)="cancelEditing()"
+          class="flex-1 sm:flex-none px-4 py-2 text-sm text-gray-700 border border-slate-300 rounded hover:bg-slate-100 transition-colors inline-flex items-center justify-center">
+          {{ isEditing ? 'Cancel' : 'Close' }}
+        </button>
+        <button *ngIf="isEditing" (click)="saveTicket()" [disabled]="!formTitle.trim()"
+          class="flex-1 sm:flex-none px-4 py-2 text-sm bg-slate-700 text-white rounded hover:bg-slate-800 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors inline-flex items-center justify-center">
+          {{ isNew ? 'Create Ticket' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div *ngIf="showDeleteConfirm" class="fixed inset-0 z-[60]">
+  <div class="absolute inset-0 bg-black/40" (click)="cancelDelete()"></div>
+  <div class="relative z-10 flex items-center justify-center min-h-screen p-4 pointer-events-none">
+    <div class="bg-white sm:rounded shadow-2xl w-full max-w-sm mx-auto overflow-hidden pointer-events-auto">
+      <div class="px-6 sm:px-8 pt-6 sm:pt-8 pb-4 text-center">
+        <h2 class="text-lg font-semibold text-gray-900 mb-2">Delete {{ ticket?.id }}</h2>
+        <p class="text-sm text-gray-500">
+          Are you sure you want to delete this ticket? This cannot be undone.
+        </p>
+      </div>
+      <div class="flex items-center justify-end gap-2 px-6 sm:px-8 py-4 border-t border-gray-100 bg-gray-50/50">
+        <button (click)="cancelDelete()"
+          class="px-4 py-2 text-sm text-gray-700 border border-slate-200 rounded hover:bg-slate-100 transition-colors">
+          Cancel
+        </button>
+        <button (click)="confirmDelete()"
+          class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded hover:bg-red-700 transition-colors">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
