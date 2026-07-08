@@ -3,10 +3,11 @@ export type TicketSeverity = 'Critical' | 'High' | 'Medium' | 'Low';
 export type ServiceCategory = 'VPS' | 'App Deployment' | 'VPN Access' | 'Object Storage' | 'Databases' | 'Domains' | 'Other/Platform';
 
 export interface TicketAttachment {
+  id: string;
   name: string;
-  type: string;
-  data: string; // base64
+  type: string; // mimeType
   size: number;
+  url: string; // public object storage URL
 }
 
 export interface Ticket {

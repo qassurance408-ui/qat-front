@@ -1,11 +1,20 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Router } from '@angular/router';
+import { Subscription, forkJoin } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { WorkspaceSelector } from './components/workspace-selector/workspace-selector';
 import { TicketTable } from './components/ticket-table/ticket-table';
 import { TicketDataService } from './services/ticket-data';
 import { Workspace } from './models/ticket';
+
+/** Generate a workspace ID in the format ws-{timestamp-base36}-{random}. */
+function generateWorkspaceId(): string {
+  const rand = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const ts = Date.now().toString(36).toUpperCase();
+  return `ws-${ts}-${rand}`;
+}
 
 @Component({
   selector: 'app-root',
@@ -23,6 +32,7 @@ export class App implements OnInit, OnDestroy {
   activeWorkspaceId: string | null = null;
   activeWorkspaceName: string | null = null;
   workspaces: Workspace[] = [];
+  loading = true;
 
   editingWorkspaceName = false;
   editWorkspaceNameBuffer = '';
@@ -34,26 +44,74 @@ export class App implements OnInit, OnDestroy {
   @ViewChild('createNameInput') createNameInputRef: ElementRef<HTMLInputElement> | null = null;
 
   private wsSub: Subscription | null = null;
+  private subs: Subscription[] = [];
 
-  constructor(private dataService: TicketDataService) {}
+  constructor(
+    private dataService: TicketDataService,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.syncAll();
+
     this.wsSub = this.dataService.activeWorkspaceChanged$.subscribe(() => {
       this.syncAll();
     });
+
+    // Subscribe to auth state — if user logs out, go to login
+    this.subs.push(
+      this.dataService.currentUser$.subscribe(user => {
+        if (!user) {
+          this.router.navigateByUrl('/login');
+        }
+      }),
+    );
   }
 
   ngOnDestroy(): void {
     this.wsSub?.unsubscribe();
+    this.subs.forEach(s => s.unsubscribe());
   }
 
   private syncAll(): void {
-    const ws = this.dataService.getActiveWorkspace();
-    this.hasActiveWorkspace = ws !== null;
-    this.activeWorkspaceId = ws?.id ?? null;
-    this.activeWorkspaceName = ws?.name ?? null;
-    this.workspaces = this.dataService.getWorkspaces();
+    const stored = this.dataService.getActiveWorkspace();
+    this.hasActiveWorkspace = stored !== null;
+    this.activeWorkspaceId = stored?.id ?? null;
+    this.activeWorkspaceName = stored?.name ?? null;
+
+    // Fetch workspaces from server and update local cache
+    this.dataService.getWorkspaces().subscribe({
+      next: (list) => {
+        this.workspaces = list.map(w => ({
+          id: w.id,
+          name: w.name,
+          createdAt: w.createdAt,
+        }));
+
+        // If we have a stored active workspace, refresh its name from server data
+        if (stored) {
+          const match = list.find(w => w.id === stored.id);
+          if (match) {
+            this.activeWorkspaceName = match.name;
+            this.dataService.setActiveWorkspace({
+              id: match.id,
+              name: match.name,
+              createdAt: match.createdAt,
+            });
+          } else {
+            // Stored workspace no longer exists on server
+            this.dataService.setActiveWorkspace(null);
+            this.hasActiveWorkspace = false;
+            this.activeWorkspaceId = null;
+            this.activeWorkspaceName = null;
+          }
+        }
+        this.loading = false;
+      },
+      error: () => {
+        this.loading = false;
+      },
+    });
   }
 
   selectWorkspace(ws: Workspace): void {
@@ -69,16 +127,28 @@ export class App implements OnInit, OnDestroy {
   createWorkspaceFromLanding(): void {
     const name = this.newWorkspaceName.trim();
     if (!name) return;
-    const ws = this.dataService.createWorkspace(name);
-    this.dataService.setActiveWorkspace(ws);
-    this.showCreateOnLanding = false;
-    this.newWorkspaceName = '';
+
+    const id = generateWorkspaceId();
+
+    this.dataService.createWorkspace(id, name).subscribe({
+      next: (ws) => {
+        this.dataService.setActiveWorkspace({
+          id: ws.id,
+          name: ws.name,
+          createdAt: ws.createdAt,
+        });
+        this.showCreateOnLanding = false;
+        this.newWorkspaceName = '';
+      },
+      error: (err) => {
+        console.error('Failed to create workspace:', err);
+      },
+    });
   }
 
   startEditingWorkspaceName(): void {
     this.editWorkspaceNameBuffer = this.activeWorkspaceName ?? '';
     this.editingWorkspaceName = true;
-    // Focus input after view renders
     setTimeout(() => this.nameInputRef?.nativeElement?.focus(), 0);
   }
 
@@ -86,8 +156,18 @@ export class App implements OnInit, OnDestroy {
     if (!this.editingWorkspaceName || !this.activeWorkspaceId) return;
     const name = this.editWorkspaceNameBuffer.trim();
     if (name && name !== this.activeWorkspaceName) {
-      this.dataService.renameWorkspace(this.activeWorkspaceId, name);
-      this.activeWorkspaceName = name;
+      this.dataService.renameWorkspace(this.activeWorkspaceId, name).subscribe({
+        next: () => {
+          this.activeWorkspaceName = name;
+          // Update stored active workspace name
+          const stored = this.dataService.getActiveWorkspace();
+          if (stored) {
+            stored.name = name;
+            this.dataService.setActiveWorkspace(stored);
+          }
+        },
+        error: (err) => console.error('Failed to rename workspace:', err),
+      });
     }
     this.editingWorkspaceName = false;
   }

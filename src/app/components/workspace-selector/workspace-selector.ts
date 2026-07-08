@@ -5,6 +5,13 @@ import { Subscription } from 'rxjs';
 import { TicketDataService } from '../../services/ticket-data';
 import { Workspace } from '../../models/ticket';
 
+/** Generate a workspace ID in the format ws-{timestamp-base36}-{random}. */
+function generateWorkspaceId(): string {
+  const rand = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const ts = Date.now().toString(36).toUpperCase();
+  return `ws-${ts}-${rand}`;
+}
+
 @Component({
   selector: 'app-workspace-selector',
   imports: [CommonModule, FormsModule],
@@ -38,8 +45,16 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
   }
 
   loadWorkspaces(): void {
-    this.workspaces = this.dataService.getWorkspaces();
     this.activeWorkspace = this.dataService.getActiveWorkspace();
+    this.dataService.getWorkspaces().subscribe({
+      next: (list) => {
+        this.workspaces = list.map(w => ({
+          id: w.id,
+          name: w.name,
+          createdAt: w.createdAt,
+        }));
+      },
+    });
   }
 
   toggleKebab(event?: MouseEvent): void {
@@ -72,11 +87,22 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
   createWorkspace(): void {
     const name = this.newWorkspaceName.trim();
     if (!name) return;
-    const ws = this.dataService.createWorkspace(name);
-    this.dataService.setActiveWorkspace(ws);
-    this.loadWorkspaces();
-    this.newWorkspaceName = '';
-    this.showCreate = false;
+
+    const id = generateWorkspaceId();
+
+    this.dataService.createWorkspace(id, name).subscribe({
+      next: (ws) => {
+        this.dataService.setActiveWorkspace({
+          id: ws.id,
+          name: ws.name,
+          createdAt: ws.createdAt,
+        });
+        this.loadWorkspaces();
+        this.newWorkspaceName = '';
+        this.showCreate = false;
+      },
+      error: (err) => console.error('Failed to create workspace:', err),
+    });
   }
 
   openDeleteConfirm(): void {
@@ -86,9 +112,13 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
 
   confirmDelete(): void {
     if (!this.activeWorkspace) return;
-    this.dataService.deleteWorkspace(this.activeWorkspace.id);
-    this.showDeleteConfirm = false;
-    this.loadWorkspaces();
+    this.dataService.deleteWorkspace(this.activeWorkspace.id).subscribe({
+      next: () => {
+        this.showDeleteConfirm = false;
+        this.loadWorkspaces();
+      },
+      error: (err) => console.error('Failed to delete workspace:', err),
+    });
   }
 
   goHome(): void {
@@ -101,45 +131,19 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
     const ws = this.dataService.getActiveWorkspace();
     if (!ws) return;
 
-    const tickets = this.dataService.getTickets(ws.id);
-
-    const exportData = {
-      exportVersion: '1.0',
-      exportTimestamp: new Date().toISOString(),
-      workspaceName: ws.name,
-      workspaceId: ws.id,
-      totalTickets: tickets.length,
-      tickets: tickets.map(t => ({
-        id: t.id,
-        title: t.title,
-        service: t.service,
-        subCategory: t.subCategory,
-        status: t.status,
-        severity: t.severity,
-        dateReported: t.dateReported,
-        description: t.description,
-        whatWasObserved: t.observed,
-        stepsToReproduce: t.stepsToReproduce,
-        expectedOutcome: t.expectedOutcome,
-        actualOutcome: t.actualOutcome,
-        possibleRootCause: t.rootCause,
-        environmentConfig: t.environment,
-        attachments: t.attachments.map(a => ({
-          name: a.name,
-          type: a.type,
-          size: a.size,
-          data: a.data
-        }))
-      }))
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `qa-export-${ws.name.replace(/[^a-zA-Z0-9]/g, '_')}-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    this.dataService.exportWorkspace(ws.id).subscribe({
+      next: (blob) => {
+        const safeName = ws.name.replace(/[^a-zA-Z0-9\-_ ]/g, '').replace(/\s+/g, '-').toLowerCase();
+        const dateStr = new Date().toISOString().split('T')[0];
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `qa-export-${safeName}-${dateStr}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: (err) => console.error('Export failed:', err),
+    });
   }
 
   @HostListener('document:click', ['$event'])

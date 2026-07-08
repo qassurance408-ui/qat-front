@@ -1,6 +1,7 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, ElementRef, HostListener } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { TicketDataService } from '../../services/ticket-data';
 import { Ticket, STATUS_OPTIONS, SEVERITY_OPTIONS, SERVICE_OPTIONS, getSubCategoryOptions } from '../../models/ticket';
 import { TicketDialog } from '../ticket-dialog/ticket-dialog';
@@ -15,11 +16,15 @@ type SortDir = 'asc' | 'desc';
   templateUrl: './ticket-table.html',
   styles: ``,
 })
-export class TicketTable implements OnInit, OnChanges {
+export class TicketTable implements OnInit, OnDestroy, OnChanges {
   @Input() activeWorkspaceId: string | null = null;
 
   ngOnInit(): void {
     this.loadTickets();
+  }
+
+  ngOnDestroy(): void {
+    this.wsSub?.unsubscribe();
   }
 
   tickets: Ticket[] = [];
@@ -46,7 +51,14 @@ export class TicketTable implements OnInit, OnChanges {
   // Inline quick-edit state
   editingField: { ticketId: string; field: string; top: number; right: number; width: number } | null = null;
 
-  constructor(private dataService: TicketDataService, private elementRef: ElementRef) {}
+  private wsSub: Subscription | null = null;
+
+  constructor(private dataService: TicketDataService, private elementRef: ElementRef) {
+    // Reload tickets when workspace changes
+    this.wsSub = this.dataService.activeWorkspaceChanged$.subscribe(() => {
+      this.loadTickets();
+    });
+  }
 
   startQuickEdit(t: Ticket, field: string, event: MouseEvent): void {
     event.stopPropagation();
@@ -64,9 +76,13 @@ export class TicketTable implements OnInit, OnChanges {
     const ws = this.dataService.getActiveWorkspace();
     if (!ws) return;
     const updated = { ...t, [field]: value };
-    this.dataService.updateTicket(ws.id, updated);
-    this.editingField = null;
-    this.loadTickets();
+    this.dataService.updateTicket(ws.id, updated).subscribe({
+      next: () => {
+        this.editingField = null;
+        this.loadTickets();
+      },
+      error: (err) => console.error('Quick edit failed:', err),
+    });
   }
 
   cancelQuickEdit(): void {
@@ -132,8 +148,13 @@ export class TicketTable implements OnInit, OnChanges {
       this.filteredTickets = [];
       return;
     }
-    this.tickets = this.dataService.getTickets(ws.id);
-    this.applyFilters();
+    this.dataService.getTickets(ws.id).subscribe({
+      next: (list) => {
+        this.tickets = list;
+        this.applyFilters();
+      },
+      error: (err) => console.error('Failed to load tickets:', err),
+    });
   }
 
   applyFilters(): void {

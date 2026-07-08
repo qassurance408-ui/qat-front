@@ -1,29 +1,136 @@
-import { Injectable } from '@angular/core';
-import { Subject } from 'rxjs';
-import { Ticket, Workspace } from '../models/ticket';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, BehaviorSubject, Subject } from 'rxjs';
+import { tap, map } from 'rxjs/operators';
+import { apiConfig } from '../api.config';
+import { Ticket, TicketAttachment, Workspace } from '../models/ticket';
+import { setAccessToken } from './auth-interceptor';
 
-/**
- * Data abstraction layer for all ticket and workspace CRUD operations.
- * Currently uses localStorage, but designed so swapping internals for
- * HttpClient calls (future REST API) requires no changes outside this file.
- */
-@Injectable({
-  providedIn: 'root'
-})
+// ───────────────────────────────────────────────────────────────────────────
+// API response shapes (mirror the backend)
+// ───────────────────────────────────────────────────────────────────────────
+
+interface AuthUser {
+  id: string;
+  email: string;
+  displayName: string;
+}
+
+export type { AuthUser };
+
+interface LoginResponse {
+  user: AuthUser;
+  accessToken: string;
+}
+
+interface WorkspaceMember {
+  userId: string;
+  displayName: string;
+  email: string;
+  role: 'OWNER' | 'MEMBER';
+  joinedAt: string;
+}
+
+interface WorkspaceResponse {
+  id: string;
+  name: string;
+  ownerId: string;
+  inviteCode: string;
+  createdAt: string;
+  role: 'OWNER' | 'MEMBER';
+  memberCount: number;
+  members?: WorkspaceMember[];
+}
+
+interface AttachmentResponse {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  url: string;
+}
+
+interface TicketResponse {
+  id: string;
+  workspaceId: string;
+  title: string;
+  service: string;
+  subCategory: string;
+  status: string;
+  severity: string;
+  dateReported: string;
+  description: string;
+  observed: string;
+  stepsToReproduce: string;
+  expectedOutcome: string;
+  actualOutcome: string;
+  rootCause: string;
+  environment: string;
+  attachments: AttachmentResponse[];
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Helpers: convert API shapes → frontend interfaces
+// ───────────────────────────────────────────────────────────────────────────
+
+function toTicket(r: TicketResponse): Ticket {
+  return {
+    id: r.id,
+    title: r.title,
+    service: r.service as Ticket['service'],
+    subCategory: r.subCategory,
+    status: r.status as Ticket['status'],
+    severity: r.severity as Ticket['severity'],
+    dateReported: r.dateReported,
+    description: r.description,
+    observed: r.observed,
+    stepsToReproduce: r.stepsToReproduce,
+    expectedOutcome: r.expectedOutcome,
+    actualOutcome: r.actualOutcome,
+    rootCause: r.rootCause,
+    environment: r.environment,
+    attachments: (r.attachments || []).map(toAttachment),
+  };
+}
+
+function toAttachment(a: AttachmentResponse): TicketAttachment {
+  return {
+    id: a.id,
+    name: a.name,
+    type: a.mimeType,
+    size: a.size,
+    url: a.url,
+  };
+}
+
+function toWorkspace(r: WorkspaceResponse): Workspace {
+  return {
+    id: r.id,
+    name: r.name,
+    createdAt: r.createdAt,
+  };
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Service
+// ───────────────────────────────────────────────────────────────────────────
+
+@Injectable({ providedIn: 'root' })
 export class TicketDataService {
-  private readonly TICKETS_KEY = 'tracker_tickets';
-  private readonly WORKSPACES_KEY = 'tracker_workspaces';
-  private readonly ACTIVE_WS_KEY = 'tracker_active_workspace';
+  private http = inject(HttpClient);
+  private api = apiConfig.baseUrl + '/api';
 
-  /** Emits whenever the active workspace changes (including on create/delete). */
+  // ── Auth state ──────────────────────────────────────────────────────────
+
+  /** Emits the current user when auth state changes (null = logged out). */
+  currentUser$ = new BehaviorSubject<AuthUser | null>(null);
+
+  /** Emits whenever the active workspace changes (UI preference). */
   activeWorkspaceChanged$ = new Subject<void>();
 
-  // --- Workspace operations ---
+  // ── Active workspace (localStorage — UI preference, not server state) ─────
 
-  getWorkspaces(): Workspace[] {
-    const data = localStorage.getItem(this.WORKSPACES_KEY);
-    return data ? JSON.parse(data) : [];
-  }
+  private readonly ACTIVE_WS_KEY = 'tracker_active_workspace';
 
   getActiveWorkspace(): Workspace | null {
     const data = localStorage.getItem(this.ACTIVE_WS_KEY);
@@ -39,137 +146,202 @@ export class TicketDataService {
     this.activeWorkspaceChanged$.next();
   }
 
-  createWorkspace(name: string): Workspace {
-    const workspaces = this.getWorkspaces();
-    const ws: Workspace = {
-      id: this.generateId('ws'),
-      name,
-      createdAt: new Date().toISOString()
-    };
-    workspaces.push(ws);
-    localStorage.setItem(this.WORKSPACES_KEY, JSON.stringify(workspaces));
-    this.activeWorkspaceChanged$.next();
-    return ws;
+  // ── Auth ─────────────────────────────────────────────────────────────────
+
+  login(email: string, password: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.api}/auth/login`, { email, password }).pipe(
+      tap(res => {
+        setAccessToken(res.accessToken);
+        this.currentUser$.next(res.user);
+      }),
+    );
   }
 
-  deleteWorkspace(id: string): void {
-    let workspaces = this.getWorkspaces();
-    workspaces = workspaces.filter(w => w.id !== id);
-    localStorage.setItem(this.WORKSPACES_KEY, JSON.stringify(workspaces));
-    // Also remove associated tickets
-    const active = this.getActiveWorkspace();
-    if (active && active.id === id) {
-      this.setActiveWorkspace(null);
-      localStorage.removeItem(`${this.TICKETS_KEY}_${id}`);
-    } else {
-      localStorage.removeItem(`${this.TICKETS_KEY}_${id}`);
+  register(email: string, password: string, displayName: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.api}/auth/register`, { email, password, displayName }).pipe(
+      tap(res => {
+        setAccessToken(res.accessToken);
+        this.currentUser$.next(res.user);
+      }),
+    );
+  }
+
+  logout(): Observable<void> {
+    return this.http.post<void>(`${this.api}/auth/logout`, {}).pipe(
+      tap(() => {
+        setAccessToken(null);
+        this.currentUser$.next(null);
+      }),
+    );
+  }
+
+  refreshAccessToken(): Observable<string> {
+    return this.http.post<{ accessToken: string }>(`${this.api}/auth/refresh`, {}).pipe(
+      tap(res => setAccessToken(res.accessToken)),
+      map(res => res.accessToken),
+    );
+  }
+
+  getAuthUser(): Observable<AuthUser> {
+    return this.http.get<AuthUser>(`${this.api}/auth/me`).pipe(
+      tap(user => this.currentUser$.next(user)),
+    );
+  }
+
+  // ── Workspaces ──────────────────────────────────────────────────────────
+
+  getWorkspaces(): Observable<WorkspaceResponse[]> {
+    return this.http.get<WorkspaceResponse[]>(`${this.api}/workspaces`);
+  }
+
+  createWorkspace(id: string, name: string): Observable<WorkspaceResponse> {
+    return this.http.post<WorkspaceResponse>(`${this.api}/workspaces`, { id, name });
+  }
+
+  getWorkspace(workspaceId: string): Observable<WorkspaceResponse> {
+    return this.http.get<WorkspaceResponse>(`${this.api}/workspaces/${workspaceId}`);
+  }
+
+  renameWorkspace(workspaceId: string, name: string): Observable<WorkspaceResponse> {
+    return this.http.patch<WorkspaceResponse>(`${this.api}/workspaces/${workspaceId}`, { name });
+  }
+
+  deleteWorkspace(workspaceId: string): Observable<void> {
+    return this.http.delete<void>(`${this.api}/workspaces/${workspaceId}`);
+  }
+
+  regenerateInviteCode(workspaceId: string): Observable<{ inviteCode: string }> {
+    return this.http.post<{ inviteCode: string }>(
+      `${this.api}/workspaces/${workspaceId}/regenerate-invite`, {},
+    );
+  }
+
+  joinWorkspace(inviteCode: string): Observable<WorkspaceResponse> {
+    return this.http.post<WorkspaceResponse>(`${this.api}/workspaces/join`, { inviteCode });
+  }
+
+  getWorkspaceMembers(workspaceId: string): Observable<WorkspaceMember[]> {
+    return this.http.get<WorkspaceResponse>(`${this.api}/workspaces/${workspaceId}`).pipe(
+      map(w => w.members || []),
+    );
+  }
+
+  removeMember(workspaceId: string, userId: string): Observable<void> {
+    return this.http.delete<void>(`${this.api}/workspaces/${workspaceId}/members/${userId}`);
+  }
+
+  // ── Tickets ─────────────────────────────────────────────────────────────
+
+  getTickets(workspaceId: string, params?: {
+    status?: string;
+    severity?: string;
+    service?: string;
+    search?: string;
+  }): Observable<Ticket[]> {
+    let httpParams = new HttpParams();
+    if (params) {
+      if (params.status) httpParams = httpParams.set('status', params.status);
+      if (params.severity) httpParams = httpParams.set('severity', params.severity);
+      if (params.service) httpParams = httpParams.set('service', params.service);
+      if (params.search) httpParams = httpParams.set('search', params.search);
     }
-    this.activeWorkspaceChanged$.next();
+    return this.http.get<TicketResponse[]>(
+      `${this.api}/workspaces/${workspaceId}/tickets`,
+      { params: httpParams },
+    ).pipe(map(rows => rows.map(toTicket)));
   }
 
-  renameWorkspace(id: string, newName: string): void {
-    const workspaces = this.getWorkspaces();
-    const ws = workspaces.find(w => w.id === id);
-    if (ws) {
-      ws.name = newName;
-      localStorage.setItem(this.WORKSPACES_KEY, JSON.stringify(workspaces));
-      // Also update active workspace if it's the same one
-      const active = this.getActiveWorkspace();
-      if (active && active.id === id) {
-        active.name = newName;
-        localStorage.setItem(this.ACTIVE_WS_KEY, JSON.stringify(active));
-      }
-      this.activeWorkspaceChanged$.next();
+  getTicket(workspaceId: string, ticketId: string): Observable<Ticket> {
+    return this.http.get<TicketResponse>(
+      `${this.api}/workspaces/${workspaceId}/tickets/${ticketId}`,
+    ).pipe(map(toTicket));
+  }
+
+  createTicket(
+    workspaceId: string,
+    ticket: {
+      id: string;
+      title: string;
+      service: string;
+      subCategory: string;
+      status: string;
+      severity: string;
+      dateReported: string;
+      description: string;
+      observed: string;
+      stepsToReproduce: string;
+      expectedOutcome: string;
+      actualOutcome: string;
+      rootCause: string;
+      environment: string;
+    },
+  ): Observable<Ticket> {
+    return this.http.post<TicketResponse>(
+      `${this.api}/workspaces/${workspaceId}/tickets`,
+      ticket,
+    ).pipe(map(toTicket));
+  }
+
+  updateTicket(workspaceId: string, ticket: Ticket): Observable<Ticket> {
+    return this.http.put<TicketResponse>(
+      `${this.api}/workspaces/${workspaceId}/tickets/${ticket.id}`,
+      {
+        id: ticket.id,
+        title: ticket.title,
+        service: ticket.service,
+        subCategory: ticket.subCategory,
+        status: ticket.status,
+        severity: ticket.severity,
+        dateReported: ticket.dateReported,
+        description: ticket.description,
+        observed: ticket.observed,
+        stepsToReproduce: ticket.stepsToReproduce,
+        expectedOutcome: ticket.expectedOutcome,
+        actualOutcome: ticket.actualOutcome,
+        rootCause: ticket.rootCause,
+        environment: ticket.environment,
+      },
+    ).pipe(map(toTicket));
+  }
+
+  deleteTicket(workspaceId: string, ticketId: string): Observable<void> {
+    return this.http.delete<void>(
+      `${this.api}/workspaces/${workspaceId}/tickets/${ticketId}`,
+    );
+  }
+
+  // ── Attachments ─────────────────────────────────────────────────────────
+
+  uploadAttachments(
+    workspaceId: string,
+    ticketId: string,
+    files: File[],
+  ): Observable<TicketAttachment[]> {
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append('files', file);
     }
+    return this.http.post<AttachmentResponse[]>(
+      `${this.api}/workspaces/${workspaceId}/tickets/${ticketId}/attachments`,
+      formData,
+    ).pipe(map(list => list.map(toAttachment)));
   }
 
-  // --- Ticket operations ---
-
-  private ticketKey(workspaceId: string): string {
-    return `${this.TICKETS_KEY}_${workspaceId}`;
+  deleteAttachment(
+    workspaceId: string,
+    ticketId: string,
+    attachmentId: string,
+  ): Observable<void> {
+    return this.http.delete<void>(
+      `${this.api}/workspaces/${workspaceId}/tickets/${ticketId}/attachments/${attachmentId}`,
+    );
   }
 
-  getTickets(workspaceId: string): Ticket[] {
-    const data = localStorage.getItem(this.ticketKey(workspaceId));
-    return data ? JSON.parse(data) : [];
-  }
+  // ── Export ──────────────────────────────────────────────────────────────
 
-  getTicket(workspaceId: string, ticketId: string): Ticket | null {
-    const tickets = this.getTickets(workspaceId);
-    return tickets.find(t => t.id === ticketId) ?? null;
-  }
-
-  createTicket(workspaceId: string, ticket: Omit<Ticket, 'id' | 'dateReported'>): Ticket {
-    const tickets = this.getTickets(workspaceId);
-    const newTicket: Ticket = {
-      ...ticket,
-      id: this.generateId('TK'),
-      dateReported: new Date().toISOString()
-    };
-    tickets.push(newTicket);
-    localStorage.setItem(this.ticketKey(workspaceId), JSON.stringify(tickets));
-    return newTicket;
-  }
-
-  updateTicket(workspaceId: string, ticket: Ticket): void {
-    const tickets = this.getTickets(workspaceId);
-    const idx = tickets.findIndex(t => t.id === ticket.id);
-    if (idx !== -1) {
-      tickets[idx] = ticket;
-      localStorage.setItem(this.ticketKey(workspaceId), JSON.stringify(tickets));
-    }
-  }
-
-  deleteTicket(workspaceId: string, ticketId: string): void {
-    let tickets = this.getTickets(workspaceId);
-    tickets = tickets.filter(t => t.id !== ticketId);
-    localStorage.setItem(this.ticketKey(workspaceId), JSON.stringify(tickets));
-  }
-
-  // --- Storage estimation ---
-
-  getStorageUsage(): { used: number; total: number; percent: number } {
-    const total = 5 * 1024 * 1024; // 5MB conservative estimate
-    let used = 0;
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key) {
-        const value = localStorage.getItem(key);
-        if (value) {
-          used += key.length + value.length;
-        }
-      }
-    }
-    return { used, total, percent: (used / total) * 100 };
-  }
-
-  isStorageSafe(additionalBytes: number): { safe: boolean; message: string } {
-    const { used, total } = this.getStorageUsage();
-    if (used + additionalBytes > total * 0.9) {
-      const remaining = total - used;
-      return {
-        safe: false,
-        message: `Storage is nearly full. Approximately ${this.formatBytes(remaining)} remaining. Consider removing old attachments or exporting your data.`
-      };
-    }
-    if (used + additionalBytes > total) {
-      return {
-        safe: false,
-        message: 'Not enough storage space available for this operation. Please remove old data or attachments first.'
-      };
-    }
-    return { safe: true, message: '' };
-  }
-
-  private formatBytes(bytes: number): string {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  }
-
-  private generateId(prefix: string): string {
-    const rand = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const ts = Date.now().toString(36).toUpperCase();
-    return `${prefix}-${ts}-${rand}`;
+  exportWorkspace(workspaceId: string): Observable<Blob> {
+    return this.http.get(`${this.api}/workspaces/${workspaceId}/export`, {
+      responseType: 'blob',
+    });
   }
 }

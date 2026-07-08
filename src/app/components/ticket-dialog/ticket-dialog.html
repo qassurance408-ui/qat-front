@@ -3,7 +3,7 @@
 
 <!-- Dialog -->
 <div class="fixed inset-0 z-50 flex items-start sm:items-center justify-center pt-0 sm:pt-8 pb-0 sm:pb-8">
-  <div class="bg-white sm:rounded shadow-2xl w-full max-w-3xl sm:mx-4 h-screen h-[100dvh] sm:h-auto sm:min-h-0 sm:max-h-[calc(100vh-4rem)] flex flex-col pb-1 sm:pb-0">
+  <div class="bg-white sm:rounded shadow-2xl w-full max-w-3xl sm:mx-4 h-[100dvh] sm:h-auto sm:min-h-0 sm:max-h-[calc(100vh-4rem)] flex flex-col pb-1 sm:pb-0">
     <!-- Header (always visible at top) -->
     <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 sm:rounded-t shrink-0">
       <h2 class="text-lg font-semibold text-gray-900 relative min-w-0">
@@ -42,9 +42,9 @@
 
     <!-- Scrollable body -->
     <div #dialogBody class="flex-1 overflow-y-auto px-4 sm:px-6 py-3 sm:py-4 space-y-4 sm:space-y-5" (scroll)="onDialogScroll($event)">
-      <!-- Storage Warning -->
-      <div *ngIf="storageWarning" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
-        {{ storageWarning }}
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+        {{ errorMessage }}
       </div>
 
       <!-- Row: Ticket ID (view only) -->
@@ -194,8 +194,9 @@
               </svg>
               <span class="text-slate-700 truncate">{{ att.name }}</span>
               <span class="text-slate-400 text-xs">({{ formatFileSize(att.size) }})</span>
-              <a [href]="att.data" [download]="att.name"
-                class="text-slate-500 hover:text-slate-700 underline text-xs ml-2">Preview</a>
+              <a *ngIf="att.url" [href]="att.url" target="_blank" rel="noopener noreferrer"
+                class="text-slate-500 hover:text-slate-700 underline text-xs ml-2">Open</a>
+              <span *ngIf="!att.id && !att.url" class="text-xs text-amber-500 ml-1">(pending)</span>
             </div>
             <button *ngIf="isEditing" (click)="removeAttachment(i)"
               class="text-slate-400 hover:text-slate-600 text-lg leading-none px-1.5">
@@ -205,10 +206,14 @@
         </div>
         <div *ngIf="isEditing">
           <label class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded cursor-pointer hover:bg-gray-200 transition-colors text-sm">
-            <span>+ Add File</span>
-            <input type="file" multiple (change)="onFileSelected($event)" class="hidden" accept="image/*,.txt,.log,.md,.csv" />
+            <span>{{ uploading ? 'Uploading…' : '+ Add File' }}</span>
+            <input type="file" multiple (change)="onFileSelected($event)" class="hidden" accept="image/jpeg,image/png,image/gif,image/webp,text/plain,application/json,application/pdf" />
           </label>
-          <p class="text-xs text-gray-400 mt-1">Max 500KB per file. Accepted: images, .txt, .log, .md, .csv</p>
+          <p class="text-xs text-gray-400 mt-1">Max 10MB per file. Accepted: images, .txt, .json, .pdf</p>
+        </div>
+        <!-- Pending files indicator -->
+        <div *ngIf="pendingFiles.length > 0 && !uploading" class="text-xs text-amber-600">
+          {{ pendingFiles.length }} file(s) will be uploaded when you save.
         </div>
       </div>
     </div>
