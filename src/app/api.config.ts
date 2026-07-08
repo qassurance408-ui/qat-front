@@ -18,5 +18,3 @@ export const apiConfig = {
   // IMPORTANT: no trailing slash
   baseUrl: getBaseUrl(),
 };
-
-export const apiCon
