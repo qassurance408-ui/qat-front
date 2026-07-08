@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { TicketDataService } from '../../services/ticket-data';
 import { Workspace } from '../../models/ticket';
@@ -31,7 +32,11 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
 
   private wsSub: Subscription | null = null;
 
-  constructor(private dataService: TicketDataService, private elementRef: ElementRef) {}
+  constructor(
+    private dataService: TicketDataService,
+    private elementRef: ElementRef,
+    private router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.loadWorkspaces();
@@ -143,6 +148,21 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
         URL.revokeObjectURL(url);
       },
       error: (err) => console.error('Export failed:', err),
+    });
+  }
+
+  logout(): void {
+    this.showKebab = false;
+    this.dataService.logout().subscribe({
+      next: () => {
+        this.dataService.setActiveWorkspace(null);
+        this.router.navigateByUrl('/login');
+      },
+      error: () => {
+        // Even if the server call fails, clear local state
+        this.dataService.setActiveWorkspace(null);
+        this.router.navigateByUrl('/login');
+      },
     });
   }
 

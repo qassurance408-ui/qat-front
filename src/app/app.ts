@@ -2,8 +2,8 @@ import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subscription, forkJoin } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
+import { skip } from 'rxjs/operators';
 import { WorkspaceSelector } from './components/workspace-selector/workspace-selector';
 import { TicketTable } from './components/ticket-table/ticket-table';
 import { TicketDataService } from './services/ticket-data';
@@ -58,9 +58,10 @@ export class App implements OnInit, OnDestroy {
       this.syncAll();
     });
 
-    // Subscribe to auth state — if user logs out, go to login
+    // Subscribe to auth state — redirect to login only on mid-session logout.
+    // Skip the initial null emission (auth guard already handled auth).
     this.subs.push(
-      this.dataService.currentUser$.subscribe(user => {
+      this.dataService.currentUser$.pipe(skip(1)).subscribe(user => {
         if (!user) {
           this.router.navigateByUrl('/login');
         }
