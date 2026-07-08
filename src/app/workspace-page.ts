@@ -79,6 +79,7 @@ export class WorkspacePage implements OnInit, OnDestroy {
     this.hasActiveWorkspace = stored !== null;
     this.activeWorkspaceId = stored?.id ?? null;
     this.activeWorkspaceName = stored?.name ?? null;
+    this.showCreateOnLanding = false;
 
     // Fetch workspaces from server and update local cache
     this.dataService.getWorkspaces().subscribe({
@@ -94,13 +95,10 @@ export class WorkspacePage implements OnInit, OnDestroy {
           const match = list.find(w => w.id === stored.id);
           if (match) {
             this.activeWorkspaceName = match.name;
-            this.dataService.setActiveWorkspace({
-              id: match.id,
-              name: match.name,
-              createdAt: match.createdAt,
-            });
+            // Silently update localStorage without emitting (avoids infinite loop)
+            this.dataService.refreshActiveWorkspaceName(match.name);
           } else {
-            // Stored workspace no longer exists on server
+            // Stored workspace no longer exists on server — go to landing
             this.dataService.setActiveWorkspace(null);
             this.hasActiveWorkspace = false;
             this.activeWorkspaceId = null;

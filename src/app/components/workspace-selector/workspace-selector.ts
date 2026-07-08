@@ -22,6 +22,7 @@ function generateWorkspaceId(): string {
 export class WorkspaceSelector implements OnInit, OnDestroy {
   workspaces: Workspace[] = [];
   activeWorkspace: Workspace | null = null;
+  loading = true;
 
   showCreate = false;
   newWorkspaceName = '';
@@ -58,6 +59,10 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
           name: w.name,
           createdAt: w.createdAt,
         }));
+        this.loading = false;
+      },
+      error: () => {
+        this.loading = false;
       },
     });
   }

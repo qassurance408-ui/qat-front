@@ -146,6 +146,15 @@ export class TicketDataService {
     this.activeWorkspaceChanged$.next();
   }
 
+  /** Update the stored active workspace name without emitting (avoids re-entry loops). */
+  refreshActiveWorkspaceName(name: string): void {
+    const stored = this.getActiveWorkspace();
+    if (stored) {
+      stored.name = name;
+      localStorage.setItem(this.ACTIVE_WS_KEY, JSON.stringify(stored));
+    }
+  }
+
   // ── Auth ─────────────────────────────────────────────────────────────────
 
   login(email: string, password: string): Observable<LoginResponse> {
