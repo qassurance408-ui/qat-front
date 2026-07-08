@@ -1,0 +1,11 @@
+{
+  "/api": {
+    "target": "https://qat.app.aletcloud.com",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api": "/back/api"
+    },
+    "logLevel": "debug"
+  }
+}

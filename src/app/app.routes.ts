@@ -14,7 +14,7 @@ export const routes: Routes = [
     path: '',
     pathMatch: 'full',
     canActivate: [authGuard],
-    loadComponent: () => import('./app').then(m => m.App),
+    loadComponent: () => import('./workspace-page').then(m => m.WorkspacePage),
   },
   {
     path: '**',
