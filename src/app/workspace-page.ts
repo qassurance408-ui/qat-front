@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -51,6 +51,7 @@ export class WorkspacePage implements OnInit, OnDestroy {
   constructor(
     private dataService: TicketDataService,
     private router: Router,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -111,11 +112,13 @@ export class WorkspacePage implements OnInit, OnDestroy {
           console.error('Error processing workspaces:', e);
         } finally {
           this.loading = false;
+          this.cdr.detectChanges();
         }
       },
       error: (err) => {
         console.error('Failed to fetch workspaces:', err);
         this.loading = false;
+        this.cdr.detectChanges();
       },
     });
   }
