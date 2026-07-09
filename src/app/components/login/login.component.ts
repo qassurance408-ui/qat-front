@@ -12,7 +12,7 @@ import { TicketDataService } from '../../services/ticket-data';
     <div class="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div class="max-w-sm w-full">
         <div class="text-center mb-8">
-          <h1 class="text-2xl font-bold text-gray-900">QA Tracker</h1>
+          <h1 class="text-2xl font-bold text-gray-900">QAT</h1>
           <p class="text-sm text-gray-500 mt-1">Sign in to your account</p>
         </div>
 
