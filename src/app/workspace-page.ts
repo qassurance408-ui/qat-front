@@ -85,30 +85,36 @@ export class WorkspacePage implements OnInit, OnDestroy {
     // Fetch workspaces from server and update local cache
     this.dataService.getWorkspaces().subscribe({
       next: (list) => {
-        this.workspaces = list.map(w => ({
-          id: w.id,
-          name: w.name,
-          createdAt: w.createdAt,
-        }));
+        try {
+          this.workspaces = list.map(w => ({
+            id: w.id,
+            name: w.name,
+            createdAt: w.createdAt,
+          }));
 
-        // If we have a stored active workspace, refresh its name from server data
-        if (stored) {
-          const match = list.find(w => w.id === stored.id);
-          if (match) {
-            this.activeWorkspaceName = match.name;
-            // Silently update localStorage without emitting (avoids infinite loop)
-            this.dataService.refreshActiveWorkspaceName(match.name);
-          } else {
-            // Stored workspace no longer exists on server — go to landing
-            this.dataService.setActiveWorkspace(null);
-            this.hasActiveWorkspace = false;
-            this.activeWorkspaceId = null;
-            this.activeWorkspaceName = null;
+          // If we have a stored active workspace, refresh its name from server data
+          if (stored) {
+            const match = list.find(w => w.id === stored.id);
+            if (match) {
+              this.activeWorkspaceName = match.name;
+              // Silently update localStorage without emitting (avoids infinite loop)
+              this.dataService.refreshActiveWorkspaceName(match.name);
+            } else {
+              // Stored workspace no longer exists on server — go to landing
+              this.dataService.setActiveWorkspace(null);
+              this.hasActiveWorkspace = false;
+              this.activeWorkspaceId = null;
+              this.activeWorkspaceName = null;
+            }
           }
+        } catch (e) {
+          console.error('Error processing workspaces:', e);
+        } finally {
+          this.loading = false;
         }
-        this.loading = false;
       },
-      error: () => {
+      error: (err) => {
+        console.error('Failed to fetch workspaces:', err);
         this.loading = false;
       },
     });

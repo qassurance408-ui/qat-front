@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -82,6 +82,7 @@ export class LoginComponent {
   constructor(
     private dataService: TicketDataService,
     private router: Router,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   validate(): boolean {
@@ -114,7 +115,17 @@ export class LoginComponent {
       },
       error: (err) => {
         this.loading = false;
-        this.error = err.error?.error?.message || 'Login failed. Please try again.';
+        // Extract server error with fallback chain
+        const serverMsg = err.error?.error?.message;
+        if (serverMsg) {
+          this.error = serverMsg;
+        } else if (err.status === 0) {
+          this.error = 'Unable to connect to server. Please check your connection.';
+        } else {
+          this.error = 'Login failed. Please try again.';
+        }
+        // Force change detection in case Angular zone doesn't pick it up
+        this.cdr.detectChanges();
       },
     });
   }

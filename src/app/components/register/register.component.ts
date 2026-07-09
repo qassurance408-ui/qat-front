@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -99,6 +99,7 @@ export class RegisterComponent {
   constructor(
     private dataService: TicketDataService,
     private router: Router,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   validate(): boolean {
@@ -139,18 +140,28 @@ export class RegisterComponent {
       },
       error: (err) => {
         this.loading = false;
-        if (err.error?.error?.code === 'CONFLICT') {
-          this.error = err.error?.error?.message || 'A user with this email already exists.';
-          this.fieldErrors.email = 'This email is already registered. Try logging in instead.';
-        } else if (err.error?.error?.code === 'VALIDATION_ERROR') {
+
+        // Extract server error details
+        const errCode = err.error?.error?.code;
+        const errMsg = err.error?.error?.message;
+        const details = err.error?.error?.details;
+
+        if (errCode === 'CONFLICT') {
+          this.error = errMsg || 'A user with this email already exists.';
+          this.fieldErrors.email = this.fieldErrors.email || 'This email is already registered. Try logging in instead.';
+        } else if (errCode === 'VALIDATION_ERROR') {
           this.error = 'Please fix the errors below.';
-          const details = err.error?.error?.details || {};
-          if (details.email) this.fieldErrors.email = details.email[0];
-          if (details.password) this.fieldErrors.password = details.password[0];
-          if (details.displayName) this.fieldErrors.displayName = details.displayName[0];
+          if (details?.email) this.fieldErrors.email = details.email[0];
+          if (details?.password) this.fieldErrors.password = details.password[0];
+          if (details?.displayName) this.fieldErrors.displayName = details.displayName[0];
+        } else if (err.status === 0) {
+          this.error = 'Unable to connect to server. Please check your connection.';
         } else {
-          this.error = err.error?.error?.message || 'Registration failed. Please try again.';
+          this.error = errMsg || 'Registration failed. Please try again.';
         }
+
+        // Force change detection in case Angular zone doesn't pick it up
+        this.cdr.detectChanges();
       },
     });
   }
