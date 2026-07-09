@@ -32,8 +32,11 @@ export class WorkspacePage implements OnInit, OnDestroy {
   hasActiveWorkspace = false;
   activeWorkspaceId: string | null = null;
   activeWorkspaceName: string | null = null;
+  activeWorkspaceRole: 'OWNER' | 'MEMBER' | null = null;
   workspaces: Workspace[] = [];
   loading = true;
+
+  renameError = '';
 
   editingWorkspaceName = false;
   editWorkspaceNameBuffer = '';
@@ -88,6 +91,7 @@ export class WorkspacePage implements OnInit, OnDestroy {
     this.hasActiveWorkspace = stored !== null;
     this.activeWorkspaceId = stored?.id ?? null;
     this.activeWorkspaceName = stored?.name ?? null;
+    this.activeWorkspaceRole = stored?.role ?? null;
     this.showCreateOnLanding = false;
 
     // Fetch workspaces from server and update local cache
@@ -98,6 +102,8 @@ export class WorkspacePage implements OnInit, OnDestroy {
             id: w.id,
             name: w.name,
             createdAt: w.createdAt,
+            ownerId: w.ownerId,
+            role: w.role,
           }));
 
           // If we have a stored active workspace, refresh its name from server data
@@ -105,6 +111,7 @@ export class WorkspacePage implements OnInit, OnDestroy {
             const match = list.find(w => w.id === stored.id);
             if (match) {
               this.activeWorkspaceName = match.name;
+              this.activeWorkspaceRole = match.role;
               // Silently update localStorage without emitting (avoids infinite loop)
               this.dataService.refreshActiveWorkspaceName(match.name);
             } else {
@@ -113,6 +120,7 @@ export class WorkspacePage implements OnInit, OnDestroy {
               this.hasActiveWorkspace = false;
               this.activeWorkspaceId = null;
               this.activeWorkspaceName = null;
+              this.activeWorkspaceRole = null;
             }
           }
         } catch (e) {
@@ -154,6 +162,8 @@ export class WorkspacePage implements OnInit, OnDestroy {
           id: ws.id,
           name: ws.name,
           createdAt: ws.createdAt,
+          ownerId: ws.ownerId,
+          role: ws.role,
         });
         this.showCreateOnLanding = false;
         this.newWorkspaceName = '';
@@ -214,6 +224,7 @@ export class WorkspacePage implements OnInit, OnDestroy {
   }
 
   startEditingWorkspaceName(): void {
+    this.renameError = '';
     this.editWorkspaceNameBuffer = this.activeWorkspaceName ?? '';
     this.editingWorkspaceName = true;
     setTimeout(() => this.nameInputRef?.nativeElement?.focus(), 0);
@@ -225,21 +236,30 @@ export class WorkspacePage implements OnInit, OnDestroy {
     if (name && name !== this.activeWorkspaceName) {
       this.dataService.renameWorkspace(this.activeWorkspaceId, name).subscribe({
         next: () => {
+          this.renameError = '';
           this.activeWorkspaceName = name;
-          // Update stored active workspace name
           const stored = this.dataService.getActiveWorkspace();
           if (stored) {
             stored.name = name;
             this.dataService.setActiveWorkspace(stored);
           }
+          this.editingWorkspaceName = false;
+          this.cdr.detectChanges();
         },
-        error: (err) => console.error('Failed to rename workspace:', err),
+        error: (err) => {
+          this.renameError = err.status === 403
+            ? 'Only the workspace owner can rename this workspace.'
+            : 'Failed to rename workspace. Please try again.';
+          this.cdr.detectChanges();
+        },
       });
+    } else {
+      this.editingWorkspaceName = false;
     }
-    this.editingWorkspaceName = false;
   }
 
   cancelEditingWorkspaceName(): void {
+    this.renameError = '';
     this.editingWorkspaceName = false;
   }
 }

@@ -8,9 +8,11 @@
           <div class="flex items-center gap-1.5 min-w-0">
             <!-- View mode -->
             <ng-container *ngIf="!editingWorkspaceName || !hasActiveWorkspace">
-              <h1 class="text-base sm:text-xl font-bold text-gray-900 truncate cursor-pointer"
+              <h1 class="text-base sm:text-xl font-bold text-gray-900 truncate cursor-pointer flex items-center gap-2"
                   (click)="startEditingWorkspaceName()">
-                {{ activeWorkspaceName || 'QA Tracker' }}
+                <span class="truncate">{{ activeWorkspaceName || 'QA Tracker' }}</span>
+                <span *ngIf="activeWorkspaceRole === 'OWNER'" class="text-[10px] font-semibold uppercase tracking-wider text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded shrink-0">Owner</span>
+                <span *ngIf="activeWorkspaceRole === 'MEMBER'" class="text-[10px] font-semibold uppercase tracking-wider text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">Member</span>
               </h1>
             </ng-container>
             <!-- Edit mode -->
@@ -21,8 +23,9 @@
                      (keyup.escape)="cancelEditingWorkspaceName()"
                      (blur)="saveWorkspaceName()"
                      class="text-base sm:text-xl font-bold text-gray-900 bg-transparent border-none p-0 m-0 outline-none ring-0 shadow-none w-full min-w-0 max-w-[200px] sm:max-w-[280px] truncate"
-                     placeholder="Workspace name"/>
-
+                     placeholder="Workspace name"
+                     [class.text-rose-600]="!!renameError"/>
+              <div *ngIf="renameError" class="text-xs text-rose-600 mt-1">{{ renameError }}</div>
             </ng-container>
           </div>
           <!-- Workspace ID row -->
@@ -134,7 +137,11 @@
               </svg>
             </div>
             <div class="min-w-0 flex-1">
-              <div class="text-sm font-medium text-gray-900 truncate">{{ ws.name }}</div>
+              <div class="text-sm font-medium text-gray-900 truncate flex items-center gap-2">
+                {{ ws.name }}
+                <span *ngIf="ws.role === 'OWNER'" class="text-[10px] font-semibold uppercase tracking-wider text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded shrink-0">Owner</span>
+                <span *ngIf="ws.role === 'MEMBER'" class="text-[10px] font-semibold uppercase tracking-wider text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">Member</span>
+              </div>
               <div class="text-xs text-gray-400">{{ ws.id }}</div>
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 group-hover:text-slate-400 transition-colors shrink-0">
