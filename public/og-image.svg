@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#0f172a"/>
+  <rect x="460" y="195" width="280" height="64" rx="8" fill="#334155"/>
+  <text x="600" y="245" font-family="system-ui, sans-serif" font-size="52" font-weight="700" fill="#ffffff" text-anchor="middle" dominant-baseline="central">QAT</text>
+  <text x="600" y="340" font-family="system-ui, sans-serif" font-size="24" fill="#94a3b8" text-anchor="middle" dominant-baseline="central">Quality Assurance Tracker</text>
+  <text x="600" y="390" font-family="system-ui, sans-serif" font-size="16" fill="#64748b" text-anchor="middle" dominant-baseline="central">Log, manage, and resolve QA findings during software testing.</text>
+</svg>
