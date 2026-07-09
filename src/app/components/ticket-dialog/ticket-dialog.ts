@@ -24,7 +24,7 @@ function generateTicketId(): string {
 })
 export class TicketDialog implements OnInit {
   @Input() ticket: Ticket | null = null;
-  @Output() close = new EventEmitter<void>();
+  @Output() close = new EventEmitter<Ticket | null>();
 
   isEditing = false;
   isNew = false;
@@ -105,7 +105,7 @@ export class TicketDialog implements OnInit {
 
   cancelEditing(): void {
     if (this.isNew || !this.isEditing) {
-      this.close.emit();
+      this.close.emit(null);
       return;
     }
     this.ngOnInit();
@@ -190,19 +190,19 @@ export class TicketDialog implements OnInit {
               this.pendingFiles = [];
               this.uploading = false;
               this.saving = false;
-              this.close.emit();
+              this.close.emit({ ...saved, attachments: [...this.formAttachments, ...uploadedAtts] });
             },
             error: (err) => {
               this.uploading = false;
               this.saving = false;
               this.errorMessage = 'Ticket saved but some files failed to upload.';
               console.error('File upload failed:', err);
-              this.close.emit();
+              this.close.emit({ ...saved, attachments: [...this.formAttachments] });
             },
           });
         } else {
           this.saving = false;
-          this.close.emit();
+          this.close.emit(saved);
         }
       },
       error: (err) => {
@@ -228,7 +228,7 @@ export class TicketDialog implements OnInit {
     this.dataService.deleteTicket(ws.id, this.ticket.id).subscribe({
       next: () => {
         this.showDeleteConfirm = false;
-        this.close.emit();
+        this.close.emit(null);
       },
       error: (err) => console.error('Delete failed:', err),
     });

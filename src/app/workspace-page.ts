@@ -40,6 +40,7 @@ export class WorkspacePage implements OnInit, OnDestroy {
 
   showCreateOnLanding = false;
   newWorkspaceName = '';
+  creatingWorkspace = false;
 
   @ViewChild('nameInput') nameInputRef: ElementRef<HTMLInputElement> | null = null;
   @ViewChild('createNameInput') createNameInputRef: ElementRef<HTMLInputElement> | null = null;
@@ -125,12 +126,14 @@ export class WorkspacePage implements OnInit, OnDestroy {
 
   createWorkspaceFromLanding(): void {
     const name = this.newWorkspaceName.trim();
-    if (!name) return;
+    if (!name || this.creatingWorkspace) return;
 
+    this.creatingWorkspace = true;
     const id = generateWorkspaceId();
 
     this.dataService.createWorkspace(id, name).subscribe({
       next: (ws) => {
+        this.creatingWorkspace = false;
         this.dataService.setActiveWorkspace({
           id: ws.id,
           name: ws.name,
@@ -140,6 +143,7 @@ export class WorkspacePage implements OnInit, OnDestroy {
         this.newWorkspaceName = '';
       },
       error: (err) => {
+        this.creatingWorkspace = false;
         console.error('Failed to create workspace:', err);
       },
     });

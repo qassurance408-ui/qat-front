@@ -29,9 +29,12 @@ import { TicketDataService } from '../../services/ticket-data';
                 [(ngModel)]="email"
                 name="email"
                 required
-                class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400"
+                (input)="touched && validate()"
+                class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:border-slate-400 transition-colors
+                  {{ fieldErrors.email ? 'border-red-400 focus:ring-red-300 bg-red-50' : 'border-slate-300 focus:ring-slate-300 bg-white' }}"
                 placeholder="you@example.com"
               />
+              <div *ngIf="fieldErrors.email" class="text-red-600 text-xs mt-1">{{ fieldErrors.email }}</div>
             </div>
 
             <div>
@@ -41,9 +44,12 @@ import { TicketDataService } from '../../services/ticket-data';
                 [(ngModel)]="password"
                 name="password"
                 required
-                class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400"
+                (input)="touched && validate()"
+                class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:border-slate-400 transition-colors
+                  {{ fieldErrors.password ? 'border-red-400 focus:ring-red-300 bg-red-50' : 'border-slate-300 focus:ring-slate-300 bg-white' }}"
                 placeholder="••••••••"
               />
+              <div *ngIf="fieldErrors.password" class="text-red-600 text-xs mt-1">{{ fieldErrors.password }}</div>
             </div>
 
             <button
@@ -69,15 +75,34 @@ export class LoginComponent {
   email = '';
   password = '';
   error = '';
+  fieldErrors: { email?: string; password?: string } = {};
   loading = false;
+  touched = false;
 
   constructor(
     private dataService: TicketDataService,
     private router: Router,
   ) {}
 
+  validate(): boolean {
+    this.fieldErrors = {};
+
+    if (!this.email.trim()) {
+      this.fieldErrors.email = 'Email is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email.trim())) {
+      this.fieldErrors.email = 'Please enter a valid email address.';
+    }
+
+    if (!this.password) {
+      this.fieldErrors.password = 'Password is required.';
+    }
+
+    return Object.keys(this.fieldErrors).length === 0;
+  }
+
   login(): void {
-    if (!this.email.trim() || !this.password) return;
+    this.touched = true;
+    if (!this.validate()) return;
 
     this.loading = true;
     this.error = '';

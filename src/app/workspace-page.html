@@ -56,8 +56,9 @@
                    class="flex-1 border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400"
                    autofocus/>
             <button (click)="createWorkspaceFromLanding()"
-                    class="px-4 py-2 text-sm bg-slate-700 text-white rounded hover:bg-slate-800 transition-colors inline-flex items-center justify-center">
-              Create
+                    [disabled]="creatingWorkspace"
+                    class="px-4 py-2 text-sm bg-slate-700 text-white rounded hover:bg-slate-800 transition-colors inline-flex items-center justify-center disabled:bg-slate-400 disabled:cursor-not-allowed">
+              {{ creatingWorkspace ? 'Creating…' : 'Create' }}
             </button>
           </div>
           <button (click)="showCreateOnLanding = false"
@@ -67,8 +68,22 @@
         </div>
       </ng-container>
 
+      <!-- Skeleton while loading workspaces -->
+      <ng-container *ngIf="loading && !showCreateOnLanding">
+        <div class="text-center">
+          <div class="w-14 h-14 mx-auto mb-4 flex items-center justify-center">
+            <div class="w-14 h-14 rounded-full bg-slate-200 animate-pulse"></div>
+          </div>
+          <div class="h-7 w-48 bg-slate-200 rounded animate-pulse mx-auto mb-2"></div>
+          <div class="h-5 w-72 bg-slate-200 rounded animate-pulse mx-auto mb-8"></div>
+          <div class="space-y-2 max-w-xs mx-auto">
+            <div *ngFor="let i of [1,2,3]" class="h-14 bg-slate-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+      </ng-container>
+
       <!-- No workspaces + not creating: Get Started CTA -->
-      <ng-container *ngIf="workspaces.length === 0 && !showCreateOnLanding">
+      <ng-container *ngIf="!loading && workspaces.length === 0 && !showCreateOnLanding">
         <div class="text-center">
           <div class="w-14 h-14 mx-auto mb-4 flex items-center justify-center text-slate-500">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">

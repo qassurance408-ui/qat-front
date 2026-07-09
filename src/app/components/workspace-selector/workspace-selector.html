@@ -1,8 +1,5 @@
-<!-- Loading state: nothing until workspaces load -->
-<div *ngIf="loading" class="w-9 h-9"></div>
-
-<!-- Empty state: just a +New button -->
-<div *ngIf="!loading && workspaces.length === 0" class="flex items-center">
+<!-- Empty state: just a +New button (no active workspace in selector, e.g. after deletion) -->
+<div *ngIf="!loading && workspaces.length === 0 && !activeWorkspace" class="flex items-center">
   <button (click)="openCreateDialog()"
           class="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-slate-700 rounded hover:bg-slate-800 transition-colors whitespace-nowrap">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -12,8 +9,8 @@
   </button>
 </div>
 
-<!-- Workspace selector (when workspaces exist) -->
-<div *ngIf="!loading && workspaces.length > 0">
+<!-- Kebab button (shown as soon as there's an active workspace) -->
+<div *ngIf="activeWorkspace">
   <!-- Kebab menu -->
   <div class="relative">
     <button (click)="toggleKebab($event)"
@@ -88,6 +85,13 @@
           Back
         </button>
         <div class="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Switch Workspace</div>
+        <!-- Skeleton items while loading -->
+        <ng-container *ngIf="loading">
+          <div *ngFor="let i of [1,2,3]" class="px-3 py-2 flex items-center gap-2">
+            <div class="w-3.5 h-3.5 bg-slate-200 rounded animate-pulse shrink-0"></div>
+            <div class="h-4 flex-1 bg-slate-200 rounded animate-pulse"></div>
+          </div>
+        </ng-container>
         <button *ngFor="let ws of workspaces"
                 (click)="selectWorkspace(ws)"
                 class="w-full text-left px-3 py-2 text-sm transition-colors flex items-center gap-2"
@@ -146,8 +150,9 @@
           Cancel
         </button>
         <button (click)="createWorkspace()"
-          class="px-4 py-2 text-sm bg-slate-700 text-white rounded hover:bg-slate-800 transition-colors">
-          Create
+          [disabled]="creating"
+          class="px-4 py-2 text-sm bg-slate-700 text-white rounded hover:bg-slate-800 transition-colors disabled:bg-slate-400 disabled:cursor-not-allowed">
+          {{ creating ? 'Creating…' : 'Create' }}
         </button>
       </div>
     </div>

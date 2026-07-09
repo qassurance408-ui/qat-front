@@ -29,9 +29,12 @@ import { TicketDataService } from '../../services/ticket-data';
                 [(ngModel)]="displayName"
                 name="displayName"
                 required
-                class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400"
+                (input)="touched && validate()"
+                class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:border-slate-400 transition-colors
+                  {{ fieldErrors.displayName ? 'border-red-400 focus:ring-red-300 bg-red-50' : 'border-slate-300 focus:ring-slate-300 bg-white' }}"
                 placeholder="Qual"
               />
+              <div *ngIf="fieldErrors.displayName" class="text-red-600 text-xs mt-1">{{ fieldErrors.displayName }}</div>
             </div>
 
             <div>
@@ -41,9 +44,12 @@ import { TicketDataService } from '../../services/ticket-data';
                 [(ngModel)]="email"
                 name="email"
                 required
-                class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400"
+                (input)="touched && validate()"
+                class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:border-slate-400 transition-colors
+                  {{ fieldErrors.email ? 'border-red-400 focus:ring-red-300 bg-red-50' : 'border-slate-300 focus:ring-slate-300 bg-white' }}"
                 placeholder="you@example.com"
               />
+              <div *ngIf="fieldErrors.email" class="text-red-600 text-xs mt-1">{{ fieldErrors.email }}</div>
             </div>
 
             <div>
@@ -54,9 +60,12 @@ import { TicketDataService } from '../../services/ticket-data';
                 name="password"
                 required
                 minlength="8"
-                class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400"
+                (input)="touched && validate()"
+                class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:border-slate-400 transition-colors
+                  {{ fieldErrors.password ? 'border-red-400 focus:ring-red-300 bg-red-50' : 'border-slate-300 focus:ring-slate-300 bg-white' }}"
                 placeholder="At least 8 characters"
               />
+              <div *ngIf="fieldErrors.password" class="text-red-600 text-xs mt-1">{{ fieldErrors.password }}</div>
             </div>
 
             <button
@@ -83,19 +92,42 @@ export class RegisterComponent {
   email = '';
   password = '';
   error = '';
+  fieldErrors: { displayName?: string; email?: string; password?: string } = {};
   loading = false;
+  touched = false;
 
   constructor(
     private dataService: TicketDataService,
     private router: Router,
   ) {}
 
-  register(): void {
-    if (!this.displayName.trim() || !this.email.trim() || !this.password) return;
-    if (this.password.length < 8) {
-      this.error = 'Password must be at least 8 characters.';
-      return;
+  validate(): boolean {
+    this.fieldErrors = {};
+
+    if (!this.displayName.trim()) {
+      this.fieldErrors.displayName = 'Display name is required.';
+    } else if (this.displayName.trim().length > 50) {
+      this.fieldErrors.displayName = 'Display name must be 50 characters or fewer.';
     }
+
+    if (!this.email.trim()) {
+      this.fieldErrors.email = 'Email is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email.trim())) {
+      this.fieldErrors.email = 'Please enter a valid email address.';
+    }
+
+    if (!this.password) {
+      this.fieldErrors.password = 'Password is required.';
+    } else if (this.password.length < 8) {
+      this.fieldErrors.password = 'Password must be at least 8 characters.';
+    }
+
+    return Object.keys(this.fieldErrors).length === 0;
+  }
+
+  register(): void {
+    this.touched = true;
+    if (!this.validate()) return;
 
     this.loading = true;
     this.error = '';
@@ -107,7 +139,18 @@ export class RegisterComponent {
       },
       error: (err) => {
         this.loading = false;
-        this.error = err.error?.error?.message || 'Registration failed. Please try again.';
+        if (err.error?.error?.code === 'CONFLICT') {
+          this.error = err.error?.error?.message || 'A user with this email already exists.';
+          this.fieldErrors.email = 'This email is already registered. Try logging in instead.';
+        } else if (err.error?.error?.code === 'VALIDATION_ERROR') {
+          this.error = 'Please fix the errors below.';
+          const details = err.error?.error?.details || {};
+          if (details.email) this.fieldErrors.email = details.email[0];
+          if (details.password) this.fieldErrors.password = details.password[0];
+          if (details.displayName) this.fieldErrors.displayName = details.displayName[0];
+        } else {
+          this.error = err.error?.error?.message || 'Registration failed. Please try again.';
+        }
       },
     });
   }

@@ -29,6 +29,7 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
 
   tickets: Ticket[] = [];
   filteredTickets: Ticket[] = [];
+  loadingTickets = false;
 
   filterStatus: string = '';
   filterSeverity: string = '';
@@ -146,14 +147,20 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
     if (!ws) {
       this.tickets = [];
       this.filteredTickets = [];
+      this.loadingTickets = false;
       return;
     }
+    this.loadingTickets = true;
     this.dataService.getTickets(ws.id).subscribe({
       next: (list) => {
         this.tickets = list;
+        this.loadingTickets = false;
         this.applyFilters();
       },
-      error: (err) => console.error('Failed to load tickets:', err),
+      error: (err) => {
+        this.loadingTickets = false;
+        console.error('Failed to load tickets:', err);
+      },
     });
   }
 
@@ -212,10 +219,24 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
     this.showDialog = true;
   }
 
-  onDialogClose(): void {
+  onDialogClose(savedTicket?: Ticket | null): void {
     this.showDialog = false;
     this.selectedTicket = null;
     this.editingTicket = null;
+
+    if (savedTicket) {
+      const idx = this.tickets.findIndex(t => t.id === savedTicket.id);
+      if (idx >= 0) {
+        // Update existing ticket in-place
+        this.tickets[idx] = savedTicket;
+      } else {
+        // Optimistically add a new ticket so it appears immediately
+        this.tickets = [savedTicket, ...this.tickets];
+      }
+      this.applyFilters();
+    }
+
+    // Refresh from server in background to ensure consistency
     this.loadTickets();
   }
 

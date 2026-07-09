@@ -26,6 +26,7 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
 
   showCreate = false;
   newWorkspaceName = '';
+  creating = false;
 
   showKebab = false;
   showSwitchSubmenu = false;
@@ -96,12 +97,15 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
 
   createWorkspace(): void {
     const name = this.newWorkspaceName.trim();
-    if (!name) return;
+    if (!name || this.creating) return;
+
+    this.creating = true;
 
     const id = generateWorkspaceId();
 
     this.dataService.createWorkspace(id, name).subscribe({
       next: (ws) => {
+        this.creating = false;
         this.dataService.setActiveWorkspace({
           id: ws.id,
           name: ws.name,
@@ -111,7 +115,10 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
         this.newWorkspaceName = '';
         this.showCreate = false;
       },
-      error: (err) => console.error('Failed to create workspace:', err),
+      error: (err) => {
+        this.creating = false;
+        console.error('Failed to create workspace:', err);
+      },
     });
   }
 
