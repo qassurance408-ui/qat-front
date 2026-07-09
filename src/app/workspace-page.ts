@@ -36,7 +36,9 @@ export class WorkspacePage implements OnInit, OnDestroy {
   workspaces: Workspace[] = [];
   loading = true;
 
-  renameError = '';
+  toastMessage = '';
+  showToast = false;
+  private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
   editingWorkspaceName = false;
   editWorkspaceNameBuffer = '';
@@ -223,8 +225,19 @@ export class WorkspacePage implements OnInit, OnDestroy {
     });
   }
 
+  private showToastMessage(msg: string): void {
+    this.toastMessage = msg;
+    this.showToast = true;
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => { this.showToast = false; this.cdr.detectChanges(); }, 4000);
+  }
+
+  dismissToast(): void {
+    this.showToast = false;
+    if (this.toastTimer) { clearTimeout(this.toastTimer); this.toastTimer = null; }
+  }
+
   startEditingWorkspaceName(): void {
-    this.renameError = '';
     this.editWorkspaceNameBuffer = this.activeWorkspaceName ?? '';
     this.editingWorkspaceName = true;
     setTimeout(() => this.nameInputRef?.nativeElement?.focus(), 0);
@@ -236,7 +249,6 @@ export class WorkspacePage implements OnInit, OnDestroy {
     if (name && name !== this.activeWorkspaceName) {
       this.dataService.renameWorkspace(this.activeWorkspaceId, name).subscribe({
         next: () => {
-          this.renameError = '';
           this.activeWorkspaceName = name;
           const stored = this.dataService.getActiveWorkspace();
           if (stored) {
@@ -247,9 +259,12 @@ export class WorkspacePage implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         },
         error: (err) => {
-          this.renameError = err.status === 403
-            ? 'Only the workspace owner can rename this workspace.'
-            : 'Failed to rename workspace. Please try again.';
+          this.editingWorkspaceName = false;
+          this.showToastMessage(
+            err.status === 403
+              ? 'Only the workspace owner can rename this workspace.'
+              : 'Failed to rename workspace. Please try again.',
+          );
           this.cdr.detectChanges();
         },
       });
@@ -259,7 +274,6 @@ export class WorkspacePage implements OnInit, OnDestroy {
   }
 
   cancelEditingWorkspaceName(): void {
-    this.renameError = '';
     this.editingWorkspaceName = false;
   }
 }
