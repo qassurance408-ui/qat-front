@@ -184,7 +184,7 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
     this.dataService.deleteWorkspace(this.activeWorkspace.id).subscribe({
       next: () => {
         this.showDeleteConfirm = false;
-        this.loadWorkspaces();
+        this.dataService.setActiveWorkspace(null);
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -253,10 +253,14 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
     navigator.clipboard.writeText(this.inviteCode).then(() => {
       this.inviteCopied = true;
       this.copyingInvite = false;
-      setTimeout(() => (this.inviteCopied = false), 2000);
+      this.cdr.detectChanges();
+      setTimeout(() => {
+        this.inviteCopied = false;
+        this.cdr.detectChanges();
+      }, 2000);
     }).catch(() => {
-      // Fallback: select text manually
       this.copyingInvite = false;
+      this.cdr.detectChanges();
     });
   }
 

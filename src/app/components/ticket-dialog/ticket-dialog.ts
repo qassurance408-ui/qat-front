@@ -132,7 +132,10 @@ export class TicketDialog implements OnInit {
     const ws = this.dataService.getActiveWorkspace();
     if (ws && att.id && this.editingTicketId) {
       this.dataService.deleteAttachment(ws.id, this.editingTicketId, att.id).subscribe({
-        error: (err) => console.error('Failed to delete attachment:', err),
+        error: (err) => {
+          console.error('Failed to delete attachment:', err);
+          this.cdr.detectChanges();
+        },
       });
     }
 
@@ -180,6 +183,7 @@ export class TicketDialog implements OnInit {
       next: (saved) => {
         this.editingTicketId = saved.id;
         this.editingDateReported = saved.dateReported;
+        this.cdr.detectChanges();
 
         // Upload any pending files
         if (this.pendingFiles.length > 0) {
@@ -190,6 +194,7 @@ export class TicketDialog implements OnInit {
               this.pendingFiles = [];
               this.uploading = false;
               this.saving = false;
+              this.cdr.detectChanges();
               this.close.emit({ ...saved, attachments: [...this.formAttachments, ...uploadedAtts] });
             },
             error: (err) => {
@@ -197,11 +202,13 @@ export class TicketDialog implements OnInit {
               this.saving = false;
               this.errorMessage = 'Ticket saved but some files failed to upload.';
               console.error('File upload failed:', err);
+              this.cdr.detectChanges();
               this.close.emit({ ...saved, attachments: [...this.formAttachments] });
             },
           });
         } else {
           this.saving = false;
+          this.cdr.detectChanges();
           this.close.emit(saved);
         }
       },
@@ -209,6 +216,7 @@ export class TicketDialog implements OnInit {
         this.saving = false;
         this.errorMessage = err.error?.error?.message || 'Failed to save ticket. Please try again.';
         console.error('Save ticket failed:', err);
+        this.cdr.detectChanges();
       },
     });
   }
@@ -228,9 +236,13 @@ export class TicketDialog implements OnInit {
     this.dataService.deleteTicket(ws.id, this.ticket.id).subscribe({
       next: () => {
         this.showDeleteConfirm = false;
+        this.cdr.detectChanges();
         this.close.emit(null);
       },
-      error: (err) => console.error('Delete failed:', err),
+      error: (err) => {
+        console.error('Delete failed:', err);
+        this.cdr.detectChanges();
+      },
     });
   }
 

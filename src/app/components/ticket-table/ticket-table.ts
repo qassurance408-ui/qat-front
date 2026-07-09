@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, ElementRef, HostListener } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, ElementRef, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -54,7 +54,11 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
 
   private wsSub: Subscription | null = null;
 
-  constructor(private dataService: TicketDataService, private elementRef: ElementRef) {
+  constructor(
+    private dataService: TicketDataService,
+    private elementRef: ElementRef,
+    private cdr: ChangeDetectorRef,
+  ) {
     // Reload tickets when workspace changes
     this.wsSub = this.dataService.activeWorkspaceChanged$.subscribe(() => {
       this.loadTickets();
@@ -81,8 +85,12 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
       next: () => {
         this.editingField = null;
         this.loadTickets();
+        this.cdr.detectChanges();
       },
-      error: (err) => console.error('Quick edit failed:', err),
+      error: (err) => {
+        console.error('Quick edit failed:', err);
+        this.cdr.detectChanges();
+      },
     });
   }
 
@@ -156,10 +164,12 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
         this.tickets = list;
         this.loadingTickets = false;
         this.applyFilters();
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.loadingTickets = false;
         console.error('Failed to load tickets:', err);
+        this.cdr.detectChanges();
       },
     });
   }
