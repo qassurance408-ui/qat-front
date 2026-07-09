@@ -44,6 +44,13 @@ export class WorkspacePage implements OnInit, OnDestroy {
 
   @ViewChild('nameInput') nameInputRef: ElementRef<HTMLInputElement> | null = null;
   @ViewChild('createNameInput') createNameInputRef: ElementRef<HTMLInputElement> | null = null;
+  @ViewChild('joinInput') joinInputRef: ElementRef<HTMLInputElement> | null = null;
+
+  showJoinDialog = false;
+  joinInviteCode = '';
+  joining = false;
+  joinError = '';
+  joinSuccess = '';
 
   private wsSub: Subscription | null = null;
   private subs: Subscription[] = [];
@@ -154,6 +161,54 @@ export class WorkspacePage implements OnInit, OnDestroy {
       error: (err) => {
         this.creatingWorkspace = false;
         console.error('Failed to create workspace:', err);
+      },
+    });
+  }
+
+  openJoinOnLanding(): void {
+    this.showJoinDialog = true;
+    this.joinInviteCode = '';
+    this.joinError = '';
+    this.joinSuccess = '';
+    setTimeout(() => this.joinInputRef?.nativeElement?.focus(), 0);
+  }
+
+  closeJoinDialog(): void {
+    this.showJoinDialog = false;
+    this.joinInviteCode = '';
+    this.joinError = '';
+    this.joinSuccess = '';
+  }
+
+  joinWorkspaceFromLanding(): void {
+    const code = this.joinInviteCode.trim();
+    if (!code || this.joining) return;
+
+    this.joining = true;
+    this.joinError = '';
+    this.joinSuccess = '';
+
+    this.dataService.joinWorkspace(code).subscribe({
+      next: (ws) => {
+        this.joining = false;
+        this.joinSuccess = `Joined "${ws.name}" successfully!`;
+        this.cdr.detectChanges();
+        this.syncAll();
+        setTimeout(() => {
+          this.closeJoinDialog();
+          this.cdr.detectChanges();
+        }, 1500);
+      },
+      error: (err) => {
+        this.joining = false;
+        if (err.status === 404) {
+          this.joinError = 'Invalid invite code — workspace not found.';
+        } else if (err.status === 409) {
+          this.joinError = 'You are already a member of this workspace.';
+        } else {
+          this.joinError = 'Failed to join workspace. Please check the invite code and try again.';
+        }
+        this.cdr.detectChanges();
       },
     });
   }
