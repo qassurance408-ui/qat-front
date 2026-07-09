@@ -6,7 +6,11 @@ module.exports = {
     path.join(__dirname, 'src/**/*.{html,ts}'),
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ['"DM Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+      },
+    },
   },
   plugins: [],
 };
