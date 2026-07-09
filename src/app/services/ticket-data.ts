@@ -108,6 +108,8 @@ function toWorkspace(r: WorkspaceResponse): Workspace {
     id: r.id,
     name: r.name,
     createdAt: r.createdAt,
+    ownerId: r.ownerId,
+    role: r.role,
   };
 }
 

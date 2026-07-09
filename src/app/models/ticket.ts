@@ -32,6 +32,8 @@ export interface Workspace {
   id: string;
   name: string;
   createdAt: string;
+  ownerId?: string;
+  role?: 'OWNER' | 'MEMBER';
 }
 
 export const STATUS_OPTIONS: TicketStatus[] = ['Open', 'Resolved', 'Closed'];

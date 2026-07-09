@@ -6,6 +6,14 @@ import { Subscription } from 'rxjs';
 import { TicketDataService } from '../../services/ticket-data';
 import { Workspace } from '../../models/ticket';
 
+interface WorkspaceMember {
+  userId: string;
+  displayName: string;
+  email: string;
+  role: 'OWNER' | 'MEMBER';
+  joinedAt: string;
+}
+
 /** Generate a workspace ID in the format ws-{timestamp-base36}-{random}. */
 function generateWorkspaceId(): string {
   const rand = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -31,6 +39,26 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
   showKebab = false;
   showSwitchSubmenu = false;
   showDeleteConfirm = false;
+
+  // ── Invite dialog ───────────────────────────────────────────────────────
+  showInviteDialog = false;
+  inviteCode = '';
+  copyingInvite = false;
+  regeneratingInvite = false;
+  inviteCopied = false;
+
+  // ── Members dialog ──────────────────────────────────────────────────────
+  showMembersDialog = false;
+  members: WorkspaceMember[] = [];
+  membersLoading = false;
+  removingMemberId: string | null = null;
+
+  // ── Join dialog ─────────────────────────────────────────────────────────
+  showJoinDialog = false;
+  joinInviteCode = '';
+  joining = false;
+  joinError = '';
+  joinSuccess = '';
 
   private wsSub: Subscription | null = null;
 
@@ -59,6 +87,8 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
           id: w.id,
           name: w.name,
           createdAt: w.createdAt,
+          ownerId: w.ownerId,
+          role: w.role,
         }));
         this.loading = false;
       },
@@ -66,6 +96,17 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
         this.loading = false;
       },
     });
+  }
+
+  /** Find the current user's role from the workspace list. */
+  get currentRole(): 'OWNER' | 'MEMBER' | null {
+    if (!this.activeWorkspace) return null;
+    const match = this.workspaces.find(w => w.id === this.activeWorkspace!.id);
+    return match?.role ?? null;
+  }
+
+  get isOwner(): boolean {
+    return this.currentRole === 'OWNER';
   }
 
   toggleKebab(event?: MouseEvent): void {
@@ -89,6 +130,8 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
     this.showSwitchSubmenu = false;
   }
 
+  // ── Create workspace ────────────────────────────────────────────────────
+
   openCreateDialog(): void {
     this.showKebab = false;
     this.showCreate = true;
@@ -110,6 +153,8 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
           id: ws.id,
           name: ws.name,
           createdAt: ws.createdAt,
+          ownerId: ws.ownerId,
+          role: ws.role,
         });
         this.loadWorkspaces();
         this.newWorkspaceName = '';
@@ -121,6 +166,8 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
       },
     });
   }
+
+  // ── Delete workspace ────────────────────────────────────────────────────
 
   openDeleteConfirm(): void {
     this.showKebab = false;
@@ -143,6 +190,8 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
     this.dataService.setActiveWorkspace(null);
   }
 
+  // ── Export ──────────────────────────────────────────────────────────────
+
   exportWorkspace(): void {
     this.showKebab = false;
     const ws = this.dataService.getActiveWorkspace();
@@ -163,6 +212,153 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
     });
   }
 
+  // ── Invite / Share ──────────────────────────────────────────────────────
+
+  openInviteDialog(): void {
+    this.showKebab = false;
+    this.inviteCopied = false;
+    if (!this.activeWorkspace) return;
+    // Fetch fresh workspace details to get the latest invite code
+    this.dataService.getWorkspace(this.activeWorkspace.id).subscribe({
+      next: (ws) => {
+        this.inviteCode = ws.inviteCode;
+        this.showInviteDialog = true;
+      },
+      error: () => {
+        // Fallback: try to find invite code from the workspaces list
+        const match = this.workspaces.find(w => w.id === this.activeWorkspace!.id);
+        this.inviteCode = 'Unable to retrieve invite code';
+        this.showInviteDialog = true;
+      },
+    });
+  }
+
+  closeInviteDialog(): void {
+    this.showInviteDialog = false;
+    this.inviteCopied = false;
+  }
+
+  copyInviteCode(): void {
+    if (!this.inviteCode) return;
+    navigator.clipboard.writeText(this.inviteCode).then(() => {
+      this.inviteCopied = true;
+      this.copyingInvite = false;
+      setTimeout(() => (this.inviteCopied = false), 2000);
+    }).catch(() => {
+      // Fallback: select text manually
+      this.copyingInvite = false;
+    });
+  }
+
+  regenerateInvite(): void {
+    if (!this.activeWorkspace || this.regeneratingInvite) return;
+    this.regeneratingInvite = true;
+    this.dataService.regenerateInviteCode(this.activeWorkspace.id).subscribe({
+      next: (res) => {
+        this.inviteCode = res.inviteCode;
+        this.regeneratingInvite = false;
+        this.inviteCopied = false;
+      },
+      error: (err) => {
+        this.regeneratingInvite = false;
+        console.error('Failed to regenerate invite code:', err);
+      },
+    });
+  }
+
+  // ── Members ─────────────────────────────────────────────────────────────
+
+  openMembersDialog(): void {
+    this.showKebab = false;
+    if (!this.activeWorkspace) return;
+    this.showMembersDialog = true;
+    this.membersLoading = true;
+    this.dataService.getWorkspaceMembers(this.activeWorkspace.id).subscribe({
+      next: (members) => {
+        this.members = members;
+        this.membersLoading = false;
+      },
+      error: () => {
+        this.membersLoading = false;
+      },
+    });
+  }
+
+  closeMembersDialog(): void {
+    this.showMembersDialog = false;
+    this.removingMemberId = null;
+  }
+
+  removeMember(userId: string): void {
+    if (!this.activeWorkspace || this.removingMemberId) return;
+    this.removingMemberId = userId;
+    this.dataService.removeMember(this.activeWorkspace.id, userId).subscribe({
+      next: () => {
+        this.members = this.members.filter(m => m.userId !== userId);
+        this.removingMemberId = null;
+        this.loadWorkspaces();
+      },
+      error: (err) => {
+        this.removingMemberId = null;
+        console.error('Failed to remove member:', err);
+      },
+    });
+  }
+
+  // ── Join workspace ──────────────────────────────────────────────────────
+
+  openJoinDialog(): void {
+    this.showKebab = false;
+    this.showJoinDialog = true;
+    this.joinInviteCode = '';
+    this.joinError = '';
+    this.joinSuccess = '';
+  }
+
+  closeJoinDialog(): void {
+    this.showJoinDialog = false;
+    this.joinError = '';
+    this.joinSuccess = '';
+  }
+
+  joinWorkspace(): void {
+    const code = this.joinInviteCode.trim();
+    if (!code || this.joining) return;
+
+    this.joining = true;
+    this.joinError = '';
+    this.joinSuccess = '';
+
+    this.dataService.joinWorkspace(code).subscribe({
+      next: (ws) => {
+        this.joining = false;
+        this.joinSuccess = `Joined "${ws.name}" successfully!`;
+        this.loadWorkspaces();
+        // Auto-switch to the joined workspace
+        this.dataService.setActiveWorkspace({
+          id: ws.id,
+          name: ws.name,
+          createdAt: ws.createdAt,
+          ownerId: ws.ownerId,
+          role: ws.role,
+        });
+        setTimeout(() => this.closeJoinDialog(), 1500);
+      },
+      error: (err) => {
+        this.joining = false;
+        if (err.status === 404) {
+          this.joinError = 'Invalid invite code — workspace not found.';
+        } else if (err.status === 409) {
+          this.joinError = 'You are already a member of this workspace.';
+        } else {
+          this.joinError = 'Failed to join workspace. Please check the invite code and try again.';
+        }
+      },
+    });
+  }
+
+  // ── Logout ──────────────────────────────────────────────────────────────
+
   logout(): void {
     this.showKebab = false;
     this.dataService.logout().subscribe({
@@ -177,6 +373,8 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
       },
     });
   }
+
+  // ── Click outside handler ───────────────────────────────────────────────
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
