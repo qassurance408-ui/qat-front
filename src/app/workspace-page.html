@@ -27,8 +27,16 @@
               <h1 class="text-base sm:text-xl font-bold text-gray-900 truncate cursor-pointer flex items-center gap-2"
                   (click)="startEditingWorkspaceName()">
                 <span class="truncate">{{ activeWorkspaceName || 'QA Tracker' }}</span>
-                <span *ngIf="activeWorkspaceRole === 'OWNER'" class="text-[10px] font-semibold uppercase tracking-wider text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded shrink-0">Owner</span>
-                <span *ngIf="activeWorkspaceRole === 'MEMBER'" class="text-[10px] font-semibold uppercase tracking-wider text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">Member</span>
+                <svg *ngIf="activeWorkspaceRole === 'OWNER'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500 shrink-0" title="Owner">
+                  <path d="M2.5 20.5a4.5 4.5 0 0 1 4-2.5 3.5 3.5 0 1 1 7-1.5 4.5 4.5 0 0 1 4 2.5"/>
+                  <path d="M12 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/>
+                  <path d="M12 22v-4.5"/>
+                  <path d="M9 19.5h6"/>
+                </svg>
+                <svg *ngIf="activeWorkspaceRole === 'MEMBER'" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 shrink-0" title="Member">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
               </h1>
             </ng-container>
             <!-- Edit mode -->
@@ -153,8 +161,16 @@
             <div class="min-w-0 flex-1">
               <div class="text-sm font-medium text-gray-900 truncate flex items-center gap-2">
                 {{ ws.name }}
-                <span *ngIf="ws.role === 'OWNER'" class="text-[10px] font-semibold uppercase tracking-wider text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded shrink-0">Owner</span>
-                <span *ngIf="ws.role === 'MEMBER'" class="text-[10px] font-semibold uppercase tracking-wider text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">Member</span>
+                <svg *ngIf="ws.role === 'OWNER'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500 shrink-0" title="Owner">
+                  <path d="M2.5 20.5a4.5 4.5 0 0 1 4-2.5 3.5 3.5 0 1 1 7-1.5 4.5 4.5 0 0 1 4 2.5"/>
+                  <path d="M12 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/>
+                  <path d="M12 22v-4.5"/>
+                  <path d="M9 19.5h6"/>
+                </svg>
+                <svg *ngIf="ws.role === 'MEMBER'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 shrink-0" title="Member">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
               </div>
               <div class="text-xs text-gray-400">{{ ws.id }}</div>
             </div>
