@@ -52,6 +52,7 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
   members: WorkspaceMember[] = [];
   membersLoading = false;
   removingMemberId: string | null = null;
+  confirmRemoveMember: WorkspaceMember | null = null;
 
   // ── Join dialog ─────────────────────────────────────────────────────────
   showJoinDialog = false;
@@ -305,11 +306,22 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
   closeMembersDialog(): void {
     this.showMembersDialog = false;
     this.removingMemberId = null;
+    this.confirmRemoveMember = null;
   }
 
-  removeMember(userId: string): void {
-    if (!this.activeWorkspace || this.removingMemberId) return;
+  openRemoveConfirm(member: WorkspaceMember): void {
+    this.confirmRemoveMember = member;
+  }
+
+  cancelRemoveConfirm(): void {
+    this.confirmRemoveMember = null;
+  }
+
+  confirmRemoveMemberAction(): void {
+    if (!this.activeWorkspace || !this.confirmRemoveMember || this.removingMemberId) return;
+    const userId = this.confirmRemoveMember.userId;
     this.removingMemberId = userId;
+    this.confirmRemoveMember = null;
     this.dataService.removeMember(this.activeWorkspace.id, userId).subscribe({
       next: () => {
         this.members = this.members.filter(m => m.userId !== userId);
