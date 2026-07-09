@@ -278,7 +278,9 @@
               <div class="min-w-0">
                 <div class="text-sm font-medium text-slate-800 truncate flex items-center gap-1.5">
                   {{ member.displayName }}
-                  <span *ngIf="member.role === 'OWNER'" class="text-[10px] font-semibold uppercase tracking-wider text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Owner</span>
+                  <svg *ngIf="member.role === 'OWNER'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 shrink-0" title="Owner">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  </svg>
                 </div>
                 <div class="text-xs text-slate-400 truncate">{{ member.email }}</div>
               </div>
