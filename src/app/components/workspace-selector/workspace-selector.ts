@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ElementRef, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, ElementRef, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -66,6 +66,7 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
     private dataService: TicketDataService,
     private elementRef: ElementRef,
     private router: Router,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -91,9 +92,11 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
           role: w.role,
         }));
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.loading = false;
+        this.cdr.detectChanges();
       },
     });
   }
@@ -159,10 +162,12 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
         this.loadWorkspaces();
         this.newWorkspaceName = '';
         this.showCreate = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.creating = false;
         console.error('Failed to create workspace:', err);
+        this.cdr.detectChanges();
       },
     });
   }
@@ -180,8 +185,12 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
       next: () => {
         this.showDeleteConfirm = false;
         this.loadWorkspaces();
+        this.cdr.detectChanges();
       },
-      error: (err) => console.error('Failed to delete workspace:', err),
+      error: (err) => {
+        console.error('Failed to delete workspace:', err);
+        this.cdr.detectChanges();
+      },
     });
   }
 
@@ -223,12 +232,13 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
       next: (ws) => {
         this.inviteCode = ws.inviteCode;
         this.showInviteDialog = true;
+        this.cdr.detectChanges();
       },
       error: () => {
-        // Fallback: try to find invite code from the workspaces list
         const match = this.workspaces.find(w => w.id === this.activeWorkspace!.id);
         this.inviteCode = 'Unable to retrieve invite code';
         this.showInviteDialog = true;
+        this.cdr.detectChanges();
       },
     });
   }
@@ -258,10 +268,12 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
         this.inviteCode = res.inviteCode;
         this.regeneratingInvite = false;
         this.inviteCopied = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.regeneratingInvite = false;
         console.error('Failed to regenerate invite code:', err);
+        this.cdr.detectChanges();
       },
     });
   }
@@ -277,9 +289,11 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
       next: (members) => {
         this.members = members;
         this.membersLoading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.membersLoading = false;
+        this.cdr.detectChanges();
       },
     });
   }
@@ -297,10 +311,12 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
         this.members = this.members.filter(m => m.userId !== userId);
         this.removingMemberId = null;
         this.loadWorkspaces();
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.removingMemberId = null;
         console.error('Failed to remove member:', err);
+        this.cdr.detectChanges();
       },
     });
   }
@@ -334,7 +350,6 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
         this.joining = false;
         this.joinSuccess = `Joined "${ws.name}" successfully!`;
         this.loadWorkspaces();
-        // Auto-switch to the joined workspace
         this.dataService.setActiveWorkspace({
           id: ws.id,
           name: ws.name,
@@ -342,6 +357,7 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
           ownerId: ws.ownerId,
           role: ws.role,
         });
+        this.cdr.detectChanges();
         setTimeout(() => this.closeJoinDialog(), 1500);
       },
       error: (err) => {
@@ -353,6 +369,7 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
         } else {
           this.joinError = 'Failed to join workspace. Please check the invite code and try again.';
         }
+        this.cdr.detectChanges();
       },
     });
   }
@@ -367,7 +384,6 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
         this.router.navigateByUrl('/login');
       },
       error: () => {
-        // Even if the server call fails, clear local state
         this.dataService.setActiveWorkspace(null);
         this.router.navigateByUrl('/login');
       },
