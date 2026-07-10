@@ -16,7 +16,7 @@
         <span *ngIf="!isNew && !isEditing"
               class="absolute inset-0 flex items-center gap-2 transition-opacity duration-200"
               [class.opacity-0]="!headerScrolled">
-          <span class="truncate max-w-[200px] sm:max-w-[400px] lg:max-w-[540px]">{{ formTitle }}</span>
+          <span class="truncate max-w-[60%]">{{ formTitle }}</span>
           <span class="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded text-xs font-medium shrink-0 {{ getStatusClass(formStatus) }}">{{ formStatus }}</span>
         </span>
       </h2>
