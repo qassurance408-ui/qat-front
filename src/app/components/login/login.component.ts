@@ -9,14 +9,13 @@ import { TicketDataService } from '../../services/ticket-data';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <div class="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 relative">
-      <div class="absolute top-0 left-0 right-0 flex justify-center pt-16">
-        <div class="text-center">
+    <div class="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
+      <div class="w-full max-w-sm -mt-12">
+        <div class="text-center mb-6">
           <h1 class="text-2xl font-bold text-gray-900">QAT</h1>
           <p class="text-sm text-gray-500 mt-1">Sign in to your account</p>
         </div>
-      </div>
-      <div class="w-full max-w-sm py-12">
+
         <div class="bg-white rounded shadow-sm border border-gray-200 p-6">
           <div *ngIf="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm mb-4">
             {{ error }}
