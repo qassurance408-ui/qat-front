@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { marked } from 'marked';
 import { TicketDataService } from '../../services/ticket-data';
 import {
   Ticket, TicketAttachment, TicketStatus, TicketSeverity, ServiceCategory,
@@ -8,6 +9,8 @@ import {
   getSubCategoryOptions
 } from '../../models/ticket';
 import { CustomSelect } from '../custom-select/custom-select';
+
+marked.setOptions({ breaks: true });
 
 /** Generate a ticket ID in the format TK-{timestamp-base36}-{random}. */
 function generateTicketId(): string {
@@ -20,7 +23,21 @@ function generateTicketId(): string {
   selector: 'app-ticket-dialog',
   imports: [CommonModule, FormsModule, CustomSelect],
   templateUrl: './ticket-dialog.html',
-  styles: ``,
+  styles: `
+    .markdown h1, .markdown h2, .markdown h3, .markdown h4 { font-weight: 600; margin-top: 1em; margin-bottom: 0.5em; }
+    .markdown h1 { font-size: 1.25rem; }
+    .markdown h2 { font-size: 1.15rem; }
+    .markdown h3 { font-size: 1.05rem; }
+    .markdown p { margin-bottom: 0.5em; }
+    .markdown ul, .markdown ol { padding-left: 1.5em; margin-bottom: 0.5em; }
+    .markdown li { margin-bottom: 0.25em; }
+    .markdown code { background: #f1f5f9; padding: 0.125em 0.375em; border-radius: 0.25em; font-size: 0.875em; }
+    .markdown pre { background: #f8fafc; padding: 0.75em; border-radius: 0.375em; overflow-x: auto; margin-bottom: 0.5em; }
+    .markdown pre code { background: none; padding: 0; }
+    .markdown blockquote { border-left: 3px solid #e2e8f0; padding-left: 0.75em; color: #64748b; margin-bottom: 0.5em; }
+    .markdown a { color: #475569; text-decoration: underline; }
+    .markdown hr { border-color: #e2e8f0; margin: 0.75em 0; }
+  `,
 })
 export class TicketDialog implements OnInit {
   @Input() ticket: Ticket | null = null;
@@ -273,5 +290,11 @@ export class TicketDialog implements OnInit {
       case 'Closed': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  }
+
+  renderMarkdown(text: string): string {
+    if (!text || text === '—') return '—';
+    const html = marked.parse(text) as string;
+    return html;
   }
 }
