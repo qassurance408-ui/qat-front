@@ -36,9 +36,9 @@
           </label>
           <button *ngIf="currentUser?.avatarUrl"
                   (click)="removeAvatar()"
-                  [disabled]="savingAvatar"
+                  [disabled]="removingAvatar"
                   class="text-sm text-rose-500 hover:text-rose-700 transition-colors disabled:opacity-50">
-            {{ savingAvatar ? 'Removing...' : 'Remove' }}
+            {{ removingAvatar ? 'Removing...' : 'Remove' }}
           </button>
           <p *ngIf="avatarError" class="text-xs text-rose-500 max-w-28 text-center">{{ avatarError }}</p>
         </div>

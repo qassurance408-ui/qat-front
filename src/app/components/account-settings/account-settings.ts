@@ -17,7 +17,8 @@ export class AccountSettingsPage implements OnInit {
   previewUrl: string | null = null;
   uploadedFile: File | null = null;
   avatarError = '';
-  savingAvatar = false;
+  uploadingAvatar = false;
+  removingAvatar = false;
 
   editingName = false;
   nameBuffer = '';
@@ -62,7 +63,7 @@ export class AccountSettingsPage implements OnInit {
     }
 
     this.avatarError = '';
-    this.savingAvatar = true;
+    this.uploadingAvatar = true;
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -73,12 +74,12 @@ export class AccountSettingsPage implements OnInit {
 
     this.dataService.uploadAvatar(file).subscribe({
       next: () => {
-        this.savingAvatar = false;
+        this.uploadingAvatar = false;
         this.uploadedFile = null;
         this.cdr.detectChanges();
       },
       error: (err) => {
-        this.savingAvatar = false;
+        this.uploadingAvatar = false;
         this.avatarError = err.error?.message || 'Failed to upload avatar';
         if (this.currentUser?.avatarUrl) {
           this.previewUrl = this.currentUser.avatarUrl;
@@ -93,17 +94,17 @@ export class AccountSettingsPage implements OnInit {
 
   removeAvatar(): void {
     this.avatarError = '';
-    this.savingAvatar = true;
+    this.removingAvatar = true;
     this.dataService.removeAvatar().subscribe({
       next: () => {
         this.previewUrl = null;
         this.uploadedFile = null;
-        this.savingAvatar = false;
+        this.removingAvatar = false;
         this.cdr.detectChanges();
       },
       error: () => {
         this.avatarError = 'Failed to remove avatar';
-        this.savingAvatar = false;
+        this.removingAvatar = false;
         this.cdr.detectChanges();
       },
     });
