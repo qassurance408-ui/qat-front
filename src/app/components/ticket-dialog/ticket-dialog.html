@@ -207,9 +207,21 @@
     <!-- Footer -->
     <div class="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b gap-2 sm:gap-0">
       <div class="w-full sm:w-auto order-2 sm:order-1">
-        <button *ngIf="isEditing && !isNew" (click)="deleteTicket()"
-          class="w-full sm:w-auto px-4 py-2 text-sm text-rose-600 border border-rose-300 rounded hover:bg-rose-50 transition-colors inline-flex items-center justify-center">
-          Delete Ticket
+        <button *ngIf="!isNew" (click)="deleteTicket()"
+          class="inline-flex items-center gap-1.5 text-sm transition-colors"
+          [class.px-4]="isEditing"
+          [class.py-2]="isEditing"
+          [class.text-rose-600]="isEditing"
+          [class.border]="isEditing"
+          [class.border-rose-300]="isEditing"
+          [class.rounded]="isEditing"
+          [class.hover:bg-rose-50]="isEditing"
+          [class.text-slate-400]="!isEditing"
+          [class.hover:text-rose-500]="!isEditing">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+          Delete
         </button>
       </div>
       <div class="flex items-center gap-2 w-full sm:w-auto order-1 sm:order-2">
