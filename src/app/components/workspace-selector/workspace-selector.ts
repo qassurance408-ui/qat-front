@@ -14,13 +14,6 @@ interface WorkspaceMember {
   joinedAt: string;
 }
 
-/** Generate a workspace ID in the format ws-{timestamp-base36}-{random}. */
-function generateWorkspaceId(): string {
-  const rand = Math.random().toString(36).substring(2, 8).toUpperCase();
-  const ts = Date.now().toString(36).toUpperCase();
-  return `ws-${ts}-${rand}`;
-}
-
 @Component({
   selector: 'app-workspace-selector',
   imports: [CommonModule, FormsModule],
@@ -31,10 +24,6 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
   workspaces: Workspace[] = [];
   activeWorkspace: Workspace | null = null;
   loading = true;
-
-  showCreate = false;
-  newWorkspaceName = '';
-  creating = false;
 
   showKebab = false;
   showSwitchSubmenu = false;
@@ -53,13 +42,6 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
   membersLoading = false;
   removingMemberId: string | null = null;
   confirmRemoveMember: WorkspaceMember | null = null;
-
-  // ── Join dialog ─────────────────────────────────────────────────────────
-  showJoinDialog = false;
-  joinInviteCode = '';
-  joining = false;
-  joinError = '';
-  joinSuccess = '';
 
   private wsSub: Subscription | null = null;
 
@@ -132,45 +114,6 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
     this.activeWorkspace = ws;
     this.showKebab = false;
     this.showSwitchSubmenu = false;
-  }
-
-  // ── Create workspace ────────────────────────────────────────────────────
-
-  openCreateDialog(): void {
-    this.showKebab = false;
-    this.showCreate = true;
-    this.newWorkspaceName = '';
-  }
-
-  createWorkspace(): void {
-    const name = this.newWorkspaceName.trim();
-    if (!name || this.creating) return;
-
-    this.creating = true;
-
-    const id = generateWorkspaceId();
-
-    this.dataService.createWorkspace(id, name).subscribe({
-      next: (ws) => {
-        this.creating = false;
-        this.dataService.setActiveWorkspace({
-          id: ws.id,
-          name: ws.name,
-          createdAt: ws.createdAt,
-          ownerId: ws.ownerId,
-          role: ws.role,
-        });
-        this.loadWorkspaces();
-        this.newWorkspaceName = '';
-        this.showCreate = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        this.creating = false;
-        console.error('Failed to create workspace:', err);
-        this.cdr.detectChanges();
-      },
-    });
   }
 
   // ── Delete workspace ────────────────────────────────────────────────────
@@ -332,59 +275,6 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
       error: (err) => {
         this.removingMemberId = null;
         console.error('Failed to remove member:', err);
-        this.cdr.detectChanges();
-      },
-    });
-  }
-
-  // ── Join workspace ──────────────────────────────────────────────────────
-
-  openJoinDialog(): void {
-    this.showKebab = false;
-    this.showJoinDialog = true;
-    this.joinInviteCode = '';
-    this.joinError = '';
-    this.joinSuccess = '';
-  }
-
-  closeJoinDialog(): void {
-    this.showJoinDialog = false;
-    this.joinError = '';
-    this.joinSuccess = '';
-  }
-
-  joinWorkspace(): void {
-    const code = this.joinInviteCode.trim();
-    if (!code || this.joining) return;
-
-    this.joining = true;
-    this.joinError = '';
-    this.joinSuccess = '';
-
-    this.dataService.joinWorkspace(code).subscribe({
-      next: (ws) => {
-        this.joining = false;
-        this.joinSuccess = `Joined "${ws.name}" successfully!`;
-        this.loadWorkspaces();
-        this.dataService.setActiveWorkspace({
-          id: ws.id,
-          name: ws.name,
-          createdAt: ws.createdAt,
-          ownerId: ws.ownerId,
-          role: ws.role,
-        });
-        this.cdr.detectChanges();
-        setTimeout(() => this.closeJoinDialog(), 1500);
-      },
-      error: (err) => {
-        this.joining = false;
-        if (err.status === 404) {
-          this.joinError = 'Invalid invite code — workspace not found.';
-        } else if (err.status === 409) {
-          this.joinError = 'You are already a member of this workspace.';
-        } else {
-          this.joinError = 'Failed to join workspace. Please check the invite code and try again.';
-        }
         this.cdr.detectChanges();
       },
     });
