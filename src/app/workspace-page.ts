@@ -6,7 +6,6 @@ import { Subscription } from 'rxjs';
 import { skip } from 'rxjs/operators';
 import { WorkspaceSelector } from './components/workspace-selector/workspace-selector';
 import { TicketTable } from './components/ticket-table/ticket-table';
-import { AccountSettingsDialog } from './components/account-settings/account-settings';
 import { TicketDataService, AuthUser } from './services/ticket-data';
 import { Workspace } from './models/ticket';
 
@@ -25,7 +24,6 @@ function generateWorkspaceId(): string {
     FormsModule,
     WorkspaceSelector,
     TicketTable,
-    AccountSettingsDialog,
   ],
   templateUrl: './workspace-page.html',
   styles: ``,
@@ -61,9 +59,6 @@ export class WorkspacePage implements OnInit, OnDestroy {
   get avatarInitial(): string {
     return (this.currentUser?.displayName?.charAt(0) || '?').toUpperCase();
   }
-
-  // ── Account Settings ─────────────────────────────────────────────────────
-  showAccountSettings = false;
 
   showJoinDialog = false;
   joinInviteCode = '';
@@ -316,27 +311,9 @@ export class WorkspacePage implements OnInit, OnDestroy {
 
   // ── Account Settings ───────────────────────────────────────────────────
 
-  openAccountSettings(): void {
+  goToAccountSettings(): void {
     this.showAvatarDropdown = false;
-    this.showAccountSettings = true;
-  }
-
-  closeAccountSettings(): void {
-    this.showAccountSettings = false;
-  }
-
-  updateAvatar(url: string | null): void {
-    if (this.currentUser) {
-      this.currentUser = { ...this.currentUser, avatarUrl: url };
-      this.cdr.detectChanges();
-    }
-  }
-
-  updateDisplayName(displayName: string): void {
-    if (this.currentUser) {
-      this.currentUser = { ...this.currentUser, displayName };
-      this.cdr.detectChanges();
-    }
+    this.router.navigateByUrl('/account-settings');
   }
 
   // ── Logout ─────────────────────────────────────────────────────────────

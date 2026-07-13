@@ -53,17 +53,13 @@
           </div>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
-          <app-workspace-selector #workspaceSelector
-                                  class="shrink-0"
-                                  (avatarUpdated)="updateAvatar($event)"
-                                  (openAccountSettingsDialog)="openAccountSettings()">
-          </app-workspace-selector>
+          <app-workspace-selector class="shrink-0"></app-workspace-selector>
 
           <!-- Avatar circle -->
           <div class="relative" #avatarContainer>
             <button (click)="toggleAvatarDropdown($event)"
-                    class="w-8 h-8 rounded-full overflow-hidden border-2 border-slate-200 hover:border-indigo-400 transition-colors shrink-0 bg-slate-100 shadow-sm"
-                    [class.border-indigo-400]="showAvatarDropdown">
+                    class="w-8 h-8 rounded-full overflow-hidden border-2 border-slate-200 hover:border-gray-400 transition-colors shrink-0 bg-slate-100 shadow-sm"
+                    [class.border-gray-400]="showAvatarDropdown">
               <img *ngIf="currentUser?.avatarUrl"
                    [src]="currentUser?.avatarUrl"
                    class="w-full h-full object-cover"
@@ -76,21 +72,35 @@
 
             <!-- Avatar dropdown -->
             <div *ngIf="showAvatarDropdown"
-                 class="absolute right-0 top-full mt-1.5 w-44 bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 z-50 py-1 overflow-hidden">
-              <div class="px-3 py-2 border-b border-slate-100">
-                <div class="text-sm font-medium text-slate-800 truncate">{{ currentUser?.displayName }}</div>
-                <div class="text-xs text-slate-400 truncate">{{ currentUser?.email }}</div>
+                 class="absolute right-0 top-full mt-1.5 w-56 bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 z-50 overflow-hidden">
+              <!-- User card -->
+              <div class="px-3 py-3 flex items-center gap-2.5 border-b border-slate-100">
+                <div class="w-9 h-9 rounded-full overflow-hidden bg-slate-100 shrink-0">
+                  <img *ngIf="currentUser?.avatarUrl"
+                       [src]="currentUser?.avatarUrl"
+                       class="w-full h-full object-cover"
+                       (error)="onAvatarError()">
+                  <div *ngIf="!currentUser?.avatarUrl"
+                       class="w-full h-full flex items-center justify-center text-xs font-semibold text-slate-500">
+                    {{ avatarInitial }}
+                  </div>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-sm font-medium text-gray-900 truncate">{{ currentUser?.displayName }}</div>
+                  <div class="text-xs text-gray-500 truncate">{{ currentUser?.email }}</div>
+                </div>
               </div>
-              <button (click)="openAccountSettings()"
-                      class="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 shrink-0">
+
+              <button (click)="goToAccountSettings()"
+                      class="w-full text-left px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 shrink-0">
                   <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                 </svg>
                 Account Settings
               </button>
               <button (click)="logout()"
-                      class="w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 shrink-0">
+                      class="w-full text-left px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors flex items-center gap-2.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 shrink-0">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
                 Sign Out
@@ -289,9 +299,4 @@
   </footer>
 </div>
 
-<!-- Account Settings Dialog -->
-<app-account-settings *ngIf="showAccountSettings"
-                      (closeDialog)="closeAccountSettings()"
-                      (avatarChanged)="updateAvatar($event)"
-                      (displayNameChanged)="updateDisplayName($event)">
-</app-account-settings>
+

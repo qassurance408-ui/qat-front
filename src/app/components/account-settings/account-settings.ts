@@ -1,32 +1,30 @@
-import { Component, Output, EventEmitter, HostListener, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TicketDataService } from '../../services/ticket-data';
-import { AuthUser } from '../../services/ticket-data';
+import { Router, RouterLink } from '@angular/router';
+import { TicketDataService, AuthUser } from '../../services/ticket-data';
 
 @Component({
   selector: 'app-account-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './account-settings.html',
   styles: ``,
 })
-export class AccountSettingsDialog {
-  @Output() closeDialog = new EventEmitter<void>();
-  @Output() displayNameChanged = new EventEmitter<string>();
-  @Output() avatarChanged = new EventEmitter<string | null>();
-
+export class AccountSettingsPage implements OnInit {
   currentUser: AuthUser | null = null;
 
   previewUrl: string | null = null;
   uploadedFile: File | null = null;
   avatarError = '';
+  savingAvatar = false;
 
-  displayName = '';
-  displayNameError = '';
-  displayNameSuccess = '';
-  savingDisplayName = false;
+  editingName = false;
+  nameBuffer = '';
+  nameError = '';
+  savingName = false;
 
+  showPasswordForm = false;
   oldPassword = '';
   newPassword = '';
   confirmPassword = '';
@@ -36,14 +34,16 @@ export class AccountSettingsDialog {
 
   constructor(
     private dataService: TicketDataService,
-    private elementRef: ElementRef,
     private cdr: ChangeDetectorRef,
-  ) {
+    private router: Router,
+  ) {}
+
+  ngOnInit(): void {
     this.currentUser = this.dataService.currentUser$.value;
     if (this.currentUser?.avatarUrl) {
       this.previewUrl = this.currentUser.avatarUrl;
     }
-    this.displayName = this.currentUser?.displayName ?? '';
+    this.nameBuffer = this.currentUser?.displayName ?? '';
   }
 
   get initial(): string {
@@ -62,7 +62,7 @@ export class AccountSettingsDialog {
     }
 
     this.avatarError = '';
-    this.uploadedFile = file;
+    this.savingAvatar = true;
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -71,17 +71,14 @@ export class AccountSettingsDialog {
     };
     reader.readAsDataURL(file);
 
-    this.uploadAvatar(file);
-  }
-
-  private uploadAvatar(file: File): void {
     this.dataService.uploadAvatar(file).subscribe({
-      next: (res) => {
+      next: () => {
+        this.savingAvatar = false;
         this.uploadedFile = null;
-        this.avatarChanged.emit(res.avatarUrl);
         this.cdr.detectChanges();
       },
       error: (err) => {
+        this.savingAvatar = false;
         this.avatarError = err.error?.message || 'Failed to upload avatar';
         if (this.currentUser?.avatarUrl) {
           this.previewUrl = this.currentUser.avatarUrl;
@@ -96,42 +93,67 @@ export class AccountSettingsDialog {
 
   removeAvatar(): void {
     this.avatarError = '';
+    this.savingAvatar = true;
     this.dataService.removeAvatar().subscribe({
       next: () => {
         this.previewUrl = null;
         this.uploadedFile = null;
-        this.avatarChanged.emit(null);
+        this.savingAvatar = false;
         this.cdr.detectChanges();
       },
       error: () => {
         this.avatarError = 'Failed to remove avatar';
+        this.savingAvatar = false;
         this.cdr.detectChanges();
       },
     });
   }
 
-  saveDisplayName(): void {
-    const name = this.displayName.trim();
-    if (!name || name === this.currentUser?.displayName || this.savingDisplayName) return;
+  startEditingName(): void {
+    this.nameBuffer = this.currentUser?.displayName ?? '';
+    this.editingName = true;
+    this.nameError = '';
+  }
 
-    this.savingDisplayName = true;
-    this.displayNameError = '';
-    this.displayNameSuccess = '';
+  cancelEditingName(): void {
+    this.editingName = false;
+    this.nameError = '';
+  }
+
+  saveDisplayName(): void {
+    const name = this.nameBuffer.trim();
+    if (!name || name === this.currentUser?.displayName || this.savingName) {
+      this.editingName = false;
+      return;
+    }
+
+    this.savingName = true;
+    this.nameError = '';
 
     this.dataService.updateProfile(name).subscribe({
       next: (user) => {
-        this.savingDisplayName = false;
+        this.savingName = false;
         this.currentUser = user;
-        this.displayNameSuccess = 'Display name updated';
-        this.displayNameChanged.emit(user.displayName);
+        this.editingName = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
-        this.savingDisplayName = false;
-        this.displayNameError = err.error?.message || 'Failed to update display name';
+        this.savingName = false;
+        this.nameError = err.error?.message || 'Failed to update display name';
         this.cdr.detectChanges();
       },
     });
+  }
+
+  togglePasswordForm(): void {
+    this.showPasswordForm = !this.showPasswordForm;
+    if (!this.showPasswordForm) {
+      this.oldPassword = '';
+      this.newPassword = '';
+      this.confirmPassword = '';
+      this.passwordError = '';
+      this.passwordSuccess = '';
+    }
   }
 
   changePassword(): void {
@@ -167,20 +189,5 @@ export class AccountSettingsDialog {
         this.cdr.detectChanges();
       },
     });
-  }
-
-  close(): void {
-    this.closeDialog.emit();
-  }
-
-  backdropClick(event: MouseEvent): void {
-    if ((event.target as HTMLElement).classList.contains('fixed')) {
-      this.close();
-    }
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    this.close();
   }
 }

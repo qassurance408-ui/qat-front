@@ -17,6 +17,11 @@ export const routes: Routes = [
     loadComponent: () => import('./workspace-page').then(m => m.WorkspacePage),
   },
   {
+    path: 'account-settings',
+    canActivate: [authGuard],
+    loadComponent: () => import('./components/account-settings/account-settings').then(m => m.AccountSettingsPage),
+  },
+  {
     path: '**',
     redirectTo: '',
   },
