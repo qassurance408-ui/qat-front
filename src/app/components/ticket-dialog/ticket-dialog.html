@@ -53,40 +53,38 @@
           ID: {{ ticket?.id }}
         </div>
 
-        <!-- Classification -->
-        <div class="pt-4 pb-3 space-y-4">
+        <!-- Classification badges (detail view) -->
+        <div *ngIf="!isEditing" class="pt-4 pb-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="inline-flex items-center justify-center leading-none px-2.5 py-0.5 rounded text-xs font-medium {{ getStatusClass(formStatus) }}">{{ formStatus }}</span>
+            <span class="inline-flex items-center justify-center leading-none px-2.5 py-0.5 rounded text-xs font-medium {{ getSeverityClass(formSeverity) }}">{{ formSeverity }}</span>
+            <span class="inline-flex items-center justify-center leading-none px-2.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">{{ formService }}</span>
+            <span *ngIf="formSubCategory" class="inline-flex items-center justify-center leading-none px-2.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">{{ formSubCategory }}</span>
+          </div>
+        </div>
+
+        <!-- Classification dropdowns (edit mode) -->
+        <div *ngIf="isEditing" class="pt-4 pb-3 space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <!-- Status -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <div *ngIf="!isEditing">
-                <span class="inline-flex items-center justify-center leading-none px-2.5 py-0.5 rounded text-xs font-medium {{ getStatusClass(formStatus) }}">{{ formStatus }}</span>
-              </div>
-              <app-custom-select *ngIf="isEditing"
+              <app-custom-select
                 [options]="statusOptions"
                 [(value)]="formStatus"
                 class="w-full"
               ></app-custom-select>
             </div>
-
-            <!-- Severity -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Severity</label>
-              <div *ngIf="!isEditing">
-                <span class="inline-flex items-center justify-center leading-none px-2.5 py-0.5 rounded text-xs font-medium {{ getSeverityClass(formSeverity) }}">{{ formSeverity }}</span>
-              </div>
-              <app-custom-select *ngIf="isEditing"
+              <app-custom-select
                 [options]="severityOptions"
                 [(value)]="formSeverity"
                 class="w-full"
               ></app-custom-select>
             </div>
-
-            <!-- Service/Category -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Service / Category</label>
-              <div *ngIf="!isEditing" class="text-gray-900 break-words">{{ formService }}</div>
-              <app-custom-select *ngIf="isEditing"
+              <app-custom-select
                 [options]="serviceOptions"
                 [(value)]="formService"
                 (valueChange)="onServiceChange()"
@@ -94,14 +92,11 @@
               ></app-custom-select>
             </div>
           </div>
-
-          <!-- Conditional Sub-Category -->
           <div *ngIf="subCategoryOptions">
             <label class="block text-sm font-medium text-gray-700 mb-1">
               {{ formService === 'VPS' ? 'OS Image' : (formService === 'App Deployment' ? 'Framework' : (formService === 'Databases' ? 'Engine' : 'Sub-Category')) }}
             </label>
-            <div *ngIf="!isEditing" class="text-gray-900 break-words">{{ formSubCategory || '—' }}</div>
-            <app-custom-select *ngIf="isEditing"
+            <app-custom-select
               [options]="subCategoryOptions"
               [(value)]="formSubCategory"
               placeholder="Select..."
@@ -120,46 +115,35 @@
         </div>
 
         <!-- Description -->
-        <div class="pt-4 pb-3">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Detailed Description</label>
+        <div *ngIf="isEditing || hasValue(formDescription)" class="pt-4 pb-3">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
           <div *ngIf="!isEditing" class="text-gray-900 break-words markdown" [innerHTML]="renderMarkdown(formDescription)"></div>
           <textarea *ngIf="isEditing" [(ngModel)]="formDescription" rows="3"
             class="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
             placeholder="Full description of the issue"></textarea>
         </div>
 
-        <!-- What Was Observed -->
-        <div class="pt-4 pb-3">
-          <label class="block text-sm font-medium text-gray-700 mb-1">What Was Observed</label>
-          <div *ngIf="!isEditing" class="text-gray-900 break-words markdown" [innerHTML]="renderMarkdown(formObserved)"></div>
-          <textarea *ngIf="isEditing" [(ngModel)]="formObserved" rows="3"
-            class="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
-            placeholder="What did you observe during testing?"></textarea>
-        </div>
-
         <!-- Steps to Reproduce -->
-        <div class="pt-4 pb-3">
+        <div *ngIf="isEditing || hasValue(formSteps)" class="pt-4 pb-3">
           <label class="block text-sm font-medium text-gray-700 mb-1">Steps to Reproduce</label>
           <div *ngIf="!isEditing" class="text-gray-900 break-words markdown" [innerHTML]="renderMarkdown(formSteps)"></div>
           <textarea *ngIf="isEditing" [(ngModel)]="formSteps" rows="4"
             class="w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
-            placeholder="1. Navigate to...
-2. Click on...
-3. Observe that..."></textarea>
+            placeholder="Steps to reproduce the issue..."></textarea>
         </div>
 
         <!-- Expected vs Actual -->
         <div class="pt-4 pb-3">
           <label class="block text-sm font-medium text-gray-700 mb-3">Outcomes</label>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
+            <div *ngIf="isEditing || hasValue(formExpected)">
               <label class="block text-xs font-medium text-gray-500 mb-1">Expected Outcome</label>
               <div *ngIf="!isEditing" class="text-gray-900 break-words markdown" [innerHTML]="renderMarkdown(formExpected)"></div>
               <textarea *ngIf="isEditing" [(ngModel)]="formExpected" rows="3"
                 class="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
                 placeholder="What should have happened?"></textarea>
             </div>
-            <div>
+            <div *ngIf="isEditing || hasValue(formActual)">
               <label class="block text-xs font-medium text-gray-500 mb-1">Actual Outcome</label>
               <div *ngIf="!isEditing" class="text-gray-900 break-words markdown" [innerHTML]="renderMarkdown(formActual)"></div>
               <textarea *ngIf="isEditing" [(ngModel)]="formActual" rows="3"
@@ -169,26 +153,17 @@
           </div>
         </div>
 
-        <!-- Root Cause -->
-        <div class="pt-4 pb-3">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Possible Issue / Root Cause</label>
-          <div *ngIf="!isEditing" class="text-gray-900 break-words markdown" [innerHTML]="renderMarkdown(formRootCause)"></div>
-          <textarea *ngIf="isEditing" [(ngModel)]="formRootCause" rows="3"
-            class="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
-            placeholder="What might be causing this issue?"></textarea>
-        </div>
-
         <!-- Environment -->
-        <div class="pt-4 pb-3">
+        <div *ngIf="isEditing || hasValue(formEnvironment)" class="pt-4 pb-3">
           <label class="block text-sm font-medium text-gray-700 mb-1">Environment / Config</label>
           <div *ngIf="!isEditing" class="text-gray-900 break-words markdown" [innerHTML]="renderMarkdown(formEnvironment)"></div>
-          <textarea *ngIf="isEditing" [(ngModel)]="formEnvironment" rows="3"
-            class="w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
-            placeholder="Node version, CLI version, deployment path type, OS details..."></textarea>
+          <input *ngIf="isEditing" [(ngModel)]="formEnvironment" type="text"
+            class="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-400 focus:bg-white"
+            placeholder="Node version, CLI version, OS, deployment path..." />
         </div>
 
         <!-- Attachments -->
-        <div class="pt-4 pb-3">
+        <div *ngIf="isEditing || formAttachments.length > 0" class="pt-4 pb-3">
           <label class="block text-sm font-medium text-gray-700 mb-2">Attachments</label>
           <div *ngIf="!isEditing && formAttachments.length === 0" class="text-gray-500 text-sm">No attachments</div>
           <div *ngIf="formAttachments.length > 0" class="space-y-2 mb-3">

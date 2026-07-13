@@ -184,11 +184,11 @@ export class TicketDialog implements OnInit {
       severity: this.formSeverity,
       dateReported: this.editingDateReported || new Date().toISOString(),
       description: this.formDescription,
-      observed: this.formObserved,
+      observed: this.formDescription,
       stepsToReproduce: this.formSteps,
       expectedOutcome: this.formExpected,
       actualOutcome: this.formActual,
-      rootCause: this.formRootCause,
+      rootCause: '',
       environment: this.formEnvironment,
     };
 
@@ -296,5 +296,9 @@ export class TicketDialog implements OnInit {
     if (!text || text === '—') return '—';
     const html = marked.parse(text) as string;
     return html;
+  }
+
+  hasValue(val: string | null | undefined): boolean {
+    return val != null && val.trim().length > 0;
   }
 }
