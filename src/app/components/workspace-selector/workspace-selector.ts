@@ -115,6 +115,28 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
     this.showSwitchSubmenu = false;
   }
 
+  // ── Leave workspace ─────────────────────────────────────────────────────
+
+  leaveWorkspace(): void {
+    if (!this.activeWorkspace || !this.dataService.currentUser$.value) return;
+    this.showKebab = false;
+
+    this.dataService.removeMember(this.activeWorkspace.id, this.dataService.currentUser$.value.id).subscribe({
+      next: () => {
+        const stored = this.dataService.getActiveWorkspace();
+        if (stored && stored.id === this.activeWorkspace!.id) {
+          this.dataService.setActiveWorkspace(null);
+        }
+        this.loadWorkspaces();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to leave workspace:', err);
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
   // ── Delete workspace ────────────────────────────────────────────────────
 
   openDeleteConfirm(): void {
