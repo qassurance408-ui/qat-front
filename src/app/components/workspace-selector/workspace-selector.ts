@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ElementRef, HostListener, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ElementRef, HostListener, ChangeDetectorRef, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -60,6 +60,9 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
   joining = false;
   joinError = '';
   joinSuccess = '';
+
+  @Output() avatarUpdated = new EventEmitter<string | null>();
+  @Output() openAccountSettingsDialog = new EventEmitter<void>();
 
   private wsSub: Subscription | null = null;
 
@@ -388,6 +391,13 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
     });
+  }
+
+  // ── Account Settings ────────────────────────────────────────────────────
+
+  openAccountSettings(): void {
+    this.showKebab = false;
+    this.openAccountSettingsDialog.emit();
   }
 
   // ── Logout ──────────────────────────────────────────────────────────────

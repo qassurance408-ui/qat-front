@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -6,7 +6,8 @@ import { Subscription } from 'rxjs';
 import { skip } from 'rxjs/operators';
 import { WorkspaceSelector } from './components/workspace-selector/workspace-selector';
 import { TicketTable } from './components/ticket-table/ticket-table';
-import { TicketDataService } from './services/ticket-data';
+import { AccountSettingsDialog } from './components/account-settings/account-settings';
+import { TicketDataService, AuthUser } from './services/ticket-data';
 import { Workspace } from './models/ticket';
 
 /** Generate a workspace ID in the format ws-{timestamp-base36}-{random}. */
@@ -24,6 +25,7 @@ function generateWorkspaceId(): string {
     FormsModule,
     WorkspaceSelector,
     TicketTable,
+    AccountSettingsDialog,
   ],
   templateUrl: './workspace-page.html',
   styles: ``,
@@ -50,6 +52,18 @@ export class WorkspacePage implements OnInit, OnDestroy {
   @ViewChild('nameInput') nameInputRef: ElementRef<HTMLInputElement> | null = null;
   @ViewChild('createNameInput') createNameInputRef: ElementRef<HTMLInputElement> | null = null;
   @ViewChild('joinInput') joinInputRef: ElementRef<HTMLInputElement> | null = null;
+  @ViewChild('avatarContainer') avatarContainerRef: ElementRef | null = null;
+
+  // ── Avatar dropdown ──────────────────────────────────────────────────────
+  showAvatarDropdown = false;
+  currentUser: AuthUser | null = null;
+
+  get avatarInitial(): string {
+    return (this.currentUser?.displayName?.charAt(0) || '?').toUpperCase();
+  }
+
+  // ── Account Settings ─────────────────────────────────────────────────────
+  showAccountSettings = false;
 
   showJoinDialog = false;
   joinInviteCode = '';
@@ -73,7 +87,16 @@ export class WorkspacePage implements OnInit, OnDestroy {
       this.syncAll();
     });
 
-    // Subscribe to auth state — redirect to login only on mid-session logout.
+    // Track current user for avatar display
+    this.currentUser = this.dataService.currentUser$.value;
+    this.subs.push(
+      this.dataService.currentUser$.subscribe(user => {
+        this.currentUser = user;
+        this.cdr.detectChanges();
+      }),
+    );
+
+    // Redirect to login only on mid-session logout (skip initial null)
     this.subs.push(
       this.dataService.currentUser$.pipe(skip(1)).subscribe(user => {
         if (!user) {
@@ -275,5 +298,73 @@ export class WorkspacePage implements OnInit, OnDestroy {
 
   cancelEditingWorkspaceName(): void {
     this.editingWorkspaceName = false;
+  }
+
+  // ── Avatar dropdown ────────────────────────────────────────────────────
+
+  toggleAvatarDropdown(event: MouseEvent): void {
+    event.stopPropagation();
+    this.showAvatarDropdown = !this.showAvatarDropdown;
+  }
+
+  onAvatarError(): void {
+    if (this.currentUser) {
+      this.currentUser = { ...this.currentUser, avatarUrl: null };
+      this.cdr.detectChanges();
+    }
+  }
+
+  // ── Account Settings ───────────────────────────────────────────────────
+
+  openAccountSettings(): void {
+    this.showAvatarDropdown = false;
+    this.showAccountSettings = true;
+  }
+
+  closeAccountSettings(): void {
+    this.showAccountSettings = false;
+  }
+
+  updateAvatar(url: string | null): void {
+    if (this.currentUser) {
+      this.currentUser = { ...this.currentUser, avatarUrl: url };
+      this.cdr.detectChanges();
+    }
+  }
+
+  updateDisplayName(displayName: string): void {
+    if (this.currentUser) {
+      this.currentUser = { ...this.currentUser, displayName };
+      this.cdr.detectChanges();
+    }
+  }
+
+  // ── Logout ─────────────────────────────────────────────────────────────
+
+  logout(): void {
+    this.showAvatarDropdown = false;
+    this.dataService.logout().subscribe({
+      next: () => {
+        this.dataService.setActiveWorkspace(null);
+        this.router.navigateByUrl('/login');
+      },
+      error: () => {
+        this.dataService.setActiveWorkspace(null);
+        this.router.navigateByUrl('/login');
+      },
+    });
+  }
+
+  // ── Click outside handler ──────────────────────────────────────────────
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (this.showAvatarDropdown) {
+      const el = this.avatarContainerRef?.nativeElement;
+      if (el && !el.contains(event.target as Node)) {
+        this.showAvatarDropdown = false;
+        this.cdr.detectChanges();
+      }
+    }
   }
 }

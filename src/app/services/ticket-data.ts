@@ -14,6 +14,7 @@ interface AuthUser {
   id: string;
   email: string;
   displayName: string;
+  avatarUrl?: string | null;
 }
 
 export type { AuthUser };
@@ -196,6 +197,40 @@ export class TicketDataService {
   getAuthUser(): Observable<AuthUser> {
     return this.http.get<AuthUser>(`${this.api}/auth/me`).pipe(
       tap(user => this.currentUser$.next(user)),
+    );
+  }
+
+  updateProfile(displayName: string): Observable<AuthUser> {
+    return this.http.put<AuthUser>(`${this.api}/auth/me`, { displayName }).pipe(
+      tap(user => this.currentUser$.next(user)),
+    );
+  }
+
+  changePassword(oldPassword: string, newPassword: string): Observable<void> {
+    return this.http.put<void>(`${this.api}/auth/password`, { oldPassword, newPassword });
+  }
+
+  uploadAvatar(file: File): Observable<{ avatarUrl: string }> {
+    const fd = new FormData();
+    fd.append('avatar', file);
+    return this.http.post<{ avatarUrl: string }>(`${this.api}/auth/avatar`, fd).pipe(
+      tap(res => {
+        const current = this.currentUser$.value;
+        if (current) {
+          this.currentUser$.next({ ...current, avatarUrl: res.avatarUrl });
+        }
+      }),
+    );
+  }
+
+  removeAvatar(): Observable<void> {
+    return this.http.delete<void>(`${this.api}/auth/avatar`).pipe(
+      tap(() => {
+        const current = this.currentUser$.value;
+        if (current) {
+          this.currentUser$.next({ ...current, avatarUrl: null });
+        }
+      }),
     );
   }
 
