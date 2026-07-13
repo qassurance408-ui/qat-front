@@ -138,7 +138,7 @@
         </div>
 
         <!-- Expected vs Actual -->
-        <div class="pt-4 pb-3">
+        <div *ngIf="isEditing || hasValue(formExpected) || hasValue(formActual)" class="pt-4 pb-3">
           <label class="block text-sm font-medium text-gray-700 mb-3">Outcomes</label>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div *ngIf="isEditing || hasValue(formExpected)">
