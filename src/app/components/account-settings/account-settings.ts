@@ -26,6 +26,9 @@ export class AccountSettingsPage implements OnInit {
   savingName = false;
 
   showPasswordForm = false;
+  showOld = false;
+  showNew = false;
+  showConfirm = false;
   oldPassword = '';
   newPassword = '';
   confirmPassword = '';
@@ -152,6 +155,9 @@ export class AccountSettingsPage implements OnInit {
       this.oldPassword = '';
       this.newPassword = '';
       this.confirmPassword = '';
+      this.showOld = false;
+      this.showNew = false;
+      this.showConfirm = false;
       this.passwordError = '';
       this.passwordSuccess = '';
     }
