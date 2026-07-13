@@ -297,8 +297,7 @@ export class WorkspacePage implements OnInit, OnDestroy {
 
   // ── Avatar dropdown ────────────────────────────────────────────────────
 
-  toggleAvatarDropdown(event: MouseEvent): void {
-    event.stopPropagation();
+  toggleAvatarDropdown(): void {
     this.showAvatarDropdown = !this.showAvatarDropdown;
   }
 

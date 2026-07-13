@@ -95,8 +95,7 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
     return this.currentRole === 'OWNER';
   }
 
-  toggleKebab(event?: MouseEvent): void {
-    event?.stopPropagation();
+  toggleKebab(): void {
     this.showKebab = !this.showKebab;
     this.showSwitchSubmenu = false;
   }
