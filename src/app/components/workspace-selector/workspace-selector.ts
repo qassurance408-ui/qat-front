@@ -28,6 +28,7 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
   showKebab = false;
   showSwitchSubmenu = false;
   showDeleteConfirm = false;
+  showLeaveConfirm = false;
 
   // ── Invite dialog ───────────────────────────────────────────────────────
   showInviteDialog = false;
@@ -118,8 +119,13 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
   // ── Leave workspace ─────────────────────────────────────────────────────
 
   leaveWorkspace(): void {
-    if (!this.activeWorkspace || !this.dataService.currentUser$.value) return;
     this.showKebab = false;
+    this.showLeaveConfirm = true;
+  }
+
+  confirmLeave(): void {
+    if (!this.activeWorkspace || !this.dataService.currentUser$.value) return;
+    this.showLeaveConfirm = false;
 
     this.dataService.removeMember(this.activeWorkspace.id, this.dataService.currentUser$.value.id).subscribe({
       next: () => {
