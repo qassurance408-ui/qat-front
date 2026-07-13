@@ -104,9 +104,6 @@
           <th (click)="setSort('service')" class="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-600 cursor-pointer hover:bg-gray-100 select-none whitespace-nowrap">
             Service
           </th>
-          <th (click)="setSort('subCategory')" class="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-600 cursor-pointer hover:bg-gray-100 select-none whitespace-nowrap">
-            Sub-Category
-          </th>
           <th (click)="setSort('status')" class="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-600 cursor-pointer hover:bg-gray-100 select-none">
             Status
           </th>
@@ -150,33 +147,7 @@
               </div>
             </div>
           </td>
-          <td class="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap align-middle relative group">
-            <div class="flex items-center gap-1.5">
-              <span class="text-gray-500">{{ t.subCategory || '—' }}</span>
-              <button *ngIf="getQuickEditOptions(t, 'subCategory').length > 0"
-                      class="quick-edit-trigger opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-600"
-                      (click)="startQuickEdit(t, 'subCategory', $event)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-              </button>
-            </div>
-            <!-- Quick-edit dropdown -->
-            <div *ngIf="editingField?.ticketId === t.id && editingField?.field === 'subCategory'"
-                 class="quick-edit-dropdown fixed z-50 bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 py-1 min-w-[180px]"
-                 [style.top.px]="editingField.top"
-                 [style.right.px]="editingField.right"
-                 [style.width.px]="editingField.width"
-                 (click)="$event.stopPropagation()">
-              <div *ngFor="let opt of getQuickEditOptions(t, 'subCategory')"
-                   class="px-3 py-2 text-sm text-gray-700 cursor-pointer hover:bg-slate-100 transition-colors"
-                   [class.font-medium]="opt === t.subCategory"
-                   (click)="quickEditValue(t, 'subCategory', opt); $event.stopPropagation()">
-                {{ opt }}
-              </div>
-            </div>
-          </td>
+
           <td class="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap align-middle relative group">
             <div class="flex items-center gap-1.5">
               <span class="inline-flex items-center justify-center leading-none px-1.5 sm:px-2.5 py-0.5 rounded text-xs font-medium {{ getStatusClass(t.status) }}">{{ t.status }}</span>
