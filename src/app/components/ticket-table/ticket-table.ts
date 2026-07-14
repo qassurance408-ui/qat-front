@@ -7,7 +7,7 @@ import { Ticket, STATUS_OPTIONS, SEVERITY_OPTIONS, SERVICE_OPTIONS, getSubCatego
 import { TicketDialog } from '../ticket-dialog/ticket-dialog';
 import { CustomSelect } from '../custom-select/custom-select';
 
-type SortField = 'id' | 'title' | 'service' | 'subCategory' | 'status' | 'severity' | 'dateReported';
+type SortField = 'id' | 'title' | 'service' | 'status' | 'severity' | 'dateReported';
 type SortDir = 'asc' | 'desc';
 
 @Component({
@@ -195,12 +195,20 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
       );
     }
 
+    const severityWeight: Record<string, number> = {
+      Critical: 4, High: 3, Medium: 2, Low: 1,
+    };
+
     result.sort((a, b) => {
       let cmp = 0;
-      const af = a[this.sortField];
-      const bf = b[this.sortField];
-      if (af < bf) cmp = -1;
-      if (af > bf) cmp = 1;
+      if (this.sortField === 'severity') {
+        cmp = (severityWeight[a.severity] || 0) - (severityWeight[b.severity] || 0);
+      } else {
+        const af = a[this.sortField] as string;
+        const bf = b[this.sortField] as string;
+        if (af < bf) cmp = -1;
+        if (af > bf) cmp = 1;
+      }
       return this.sortDir === 'asc' ? cmp : -cmp;
     });
 
