@@ -77,7 +77,41 @@ export class TicketDialog implements OnInit {
   private editingTicketId: string | null = null;
   private editingDateReported: string | null = null;
 
+  // Touch drag-to-close state
+  dragTransform = '';
+  dragging = false;
+  private touchStartY = 0;
+  private touchCurrentY = 0;
+
   constructor(private dataService: TicketDataService, private cdr: ChangeDetectorRef) {}
+
+  onTouchStart(event: TouchEvent): void {
+    if (event.touches.length !== 1) return;
+    this.touchStartY = event.touches[0].clientY;
+    this.dragging = true;
+  }
+
+  onTouchMove(event: TouchEvent): void {
+    if (!this.dragging || event.touches.length !== 1) return;
+    this.touchCurrentY = event.touches[0].clientY;
+    const dy = this.touchCurrentY - this.touchStartY;
+    if (dy < 0) return;
+    const translate = Math.min(dy, 200);
+    const scale = 1 - (translate / 200) * 0.05;
+    this.dragTransform = `translateY(${translate}px) scale(${scale})`;
+  }
+
+  onTouchEnd(_event: TouchEvent): void {
+    if (!this.dragging) return;
+    this.dragging = false;
+    const dy = this.touchCurrentY - this.touchStartY;
+    if (dy > 100) {
+      this.close.emit(null);
+    } else {
+      this.dragTransform = '';
+      this.cdr.detectChanges();
+    }
+  }
 
   onDialogScroll(event: Event): void {
     const el = event.target as HTMLElement;

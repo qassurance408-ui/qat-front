@@ -15,8 +15,20 @@ type SortDir = 'asc' | 'desc';
   imports: [CommonModule, FormsModule, TicketDialog, CustomSelect],
   templateUrl: './ticket-table.html',
   styles: `
-    @keyframes sidebarFadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes sidebarSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    .sidebar-overlay { transition: opacity 0.35s ease-out; }
+    .sidebar-overlay.ng-enter { opacity: 0; }
+    .sidebar-overlay.ng-enter-active { opacity: 1; }
+
+    @media (max-width: 639px) {
+      .sidebar-panel { transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+      .sidebar-panel.closed { transform: translateY(100%); }
+      .sidebar-panel.open { transform: translateY(0); }
+    }
+    @media (min-width: 640px) {
+      .sidebar-panel { transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+      .sidebar-panel.closed { transform: translateX(100%); }
+      .sidebar-panel.open { transform: translateX(0); }
+    }
   `,
 })
 export class TicketTable implements OnInit, OnDestroy, OnChanges {
@@ -44,6 +56,8 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
 
   selectedTicket: Ticket | null = null;
   showDialog = false;
+  sidebarOpen = false;
+  sidebarClosing = false;
   editingTicket: Ticket | null = null;
 
   statusOptions = STATUS_OPTIONS;
@@ -232,32 +246,40 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
     this.selectedTicket = ticket;
     this.editingTicket = null;
     this.showDialog = true;
+    this.sidebarOpen = true;
   }
 
   addTicket(): void {
     this.selectedTicket = null;
     this.editingTicket = null;
     this.showDialog = true;
+    this.sidebarOpen = true;
+  }
+
+  closeSidebar(): void {
+    if (this.sidebarClosing) return;
+    this.sidebarClosing = true;
+    this.sidebarOpen = false;
+    setTimeout(() => {
+      this.showDialog = false;
+      this.sidebarClosing = false;
+      this.selectedTicket = null;
+      this.editingTicket = null;
+      this.cdr.detectChanges();
+    }, 350);
   }
 
   onDialogClose(savedTicket?: Ticket | null): void {
-    this.showDialog = false;
-    this.selectedTicket = null;
-    this.editingTicket = null;
-
     if (savedTicket) {
       const idx = this.tickets.findIndex(t => t.id === savedTicket.id);
       if (idx >= 0) {
-        // Update existing ticket in-place
         this.tickets[idx] = savedTicket;
       } else {
-        // Optimistically add a new ticket so it appears immediately
         this.tickets = [savedTicket, ...this.tickets];
       }
       this.applyFilters();
     }
-
-    // Refresh from server in background to ensure consistency
+    this.closeSidebar();
     this.loadTickets();
   }
 
