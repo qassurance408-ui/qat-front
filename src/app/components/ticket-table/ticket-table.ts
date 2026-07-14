@@ -250,8 +250,10 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
     this.lockBodyScroll();
     this.cdr.detectChanges();
     requestAnimationFrame(() => {
-      this.sidebarOpen = true;
-      this.cdr.detectChanges();
+      requestAnimationFrame(() => {
+        this.sidebarOpen = true;
+        this.cdr.detectChanges();
+      });
     });
   }
 
@@ -263,8 +265,10 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
     this.lockBodyScroll();
     this.cdr.detectChanges();
     requestAnimationFrame(() => {
-      this.sidebarOpen = true;
-      this.cdr.detectChanges();
+      requestAnimationFrame(() => {
+        this.sidebarOpen = true;
+        this.cdr.detectChanges();
+      });
     });
   }
 

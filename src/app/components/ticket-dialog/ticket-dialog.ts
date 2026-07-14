@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { marked } from 'marked';
@@ -24,6 +24,7 @@ function generateTicketId(): string {
   imports: [CommonModule, FormsModule, CustomSelect],
   templateUrl: './ticket-dialog.html',
   styles: `
+    :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
     .markdown h1, .markdown h2, .markdown h3, .markdown h4 { font-weight: 600; margin-top: 1em; margin-bottom: 0.5em; }
     .markdown h1 { font-size: 1.25rem; }
     .markdown h2 { font-size: 1.15rem; }
@@ -82,11 +83,14 @@ export class TicketDialog implements OnInit {
   dragging = false;
   private touchStartY = 0;
   private touchCurrentY = 0;
+  @ViewChild('dialogBody') private dialogBodyEl!: ElementRef;
 
   constructor(private dataService: TicketDataService, private cdr: ChangeDetectorRef) {}
 
   onTouchStart(event: TouchEvent): void {
     if (event.touches.length !== 1) return;
+    const body = this.dialogBodyEl?.nativeElement;
+    if (body && body.scrollTop > 0) return;
     this.touchStartY = event.touches[0].clientY;
     this.dragging = true;
   }
@@ -96,6 +100,7 @@ export class TicketDialog implements OnInit {
     this.touchCurrentY = event.touches[0].clientY;
     const dy = this.touchCurrentY - this.touchStartY;
     if (dy < 0) return;
+    event.preventDefault();
     const translate = Math.min(dy, 200);
     const scale = 1 - (translate / 200) * 0.05;
     this.dragTransform = `translateY(${translate}px) scale(${scale})`;
