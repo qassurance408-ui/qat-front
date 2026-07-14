@@ -246,20 +246,34 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
     this.selectedTicket = ticket;
     this.editingTicket = null;
     this.showDialog = true;
-    this.sidebarOpen = true;
+    this.sidebarOpen = false;
+    this.lockBodyScroll();
+    this.cdr.detectChanges();
+    requestAnimationFrame(() => {
+      this.sidebarOpen = true;
+      this.cdr.detectChanges();
+    });
   }
 
   addTicket(): void {
     this.selectedTicket = null;
     this.editingTicket = null;
     this.showDialog = true;
-    this.sidebarOpen = true;
+    this.sidebarOpen = false;
+    this.lockBodyScroll();
+    this.cdr.detectChanges();
+    requestAnimationFrame(() => {
+      this.sidebarOpen = true;
+      this.cdr.detectChanges();
+    });
   }
 
   closeSidebar(): void {
     if (this.sidebarClosing) return;
     this.sidebarClosing = true;
     this.sidebarOpen = false;
+    this.unlockBodyScroll();
+    this.cdr.detectChanges();
     setTimeout(() => {
       this.showDialog = false;
       this.sidebarClosing = false;
@@ -267,6 +281,14 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
       this.editingTicket = null;
       this.cdr.detectChanges();
     }, 350);
+  }
+
+  private lockBodyScroll(): void {
+    document.body.style.overflow = 'hidden';
+  }
+
+  private unlockBodyScroll(): void {
+    document.body.style.overflow = '';
   }
 
   onDialogClose(savedTicket?: Ticket | null): void {
