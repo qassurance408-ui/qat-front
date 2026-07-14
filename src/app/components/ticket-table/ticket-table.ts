@@ -14,7 +14,10 @@ type SortDir = 'asc' | 'desc';
   selector: 'app-ticket-table',
   imports: [CommonModule, FormsModule, TicketDialog, CustomSelect],
   templateUrl: './ticket-table.html',
-  styles: ``,
+  styles: `
+    @keyframes sidebarFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes sidebarSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  `,
 })
 export class TicketTable implements OnInit, OnDestroy, OnChanges {
   @Input() activeWorkspaceId: string | null = null;

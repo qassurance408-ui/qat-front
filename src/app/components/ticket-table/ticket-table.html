@@ -242,9 +242,18 @@
   </div>
 </div>
 
-<!-- Ticket Dialog -->
-<app-ticket-dialog
-  *ngIf="showDialog"
-  [ticket]="selectedTicket"
-  (close)="onDialogClose($event)"
-></app-ticket-dialog>
+<!-- Ticket Sidebar -->
+<div *ngIf="showDialog"
+     class="fixed inset-0 z-40"
+     [style.animation]="'sidebarFadeIn 200ms ease-out'">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/40" (click)="onDialogClose(null)"></div>
+  <!-- Sidebar panel -->
+  <div class="absolute right-0 top-0 h-full w-full max-w-2xl bg-white shadow-2xl"
+       [style.animation]="'sidebarSlideIn 250ms ease-out'">
+    <app-ticket-dialog
+      [ticket]="selectedTicket"
+      (close)="onDialogClose($event)"
+    ></app-ticket-dialog>
+  </div>
+</div>
