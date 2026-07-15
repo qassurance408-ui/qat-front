@@ -38,13 +38,14 @@ function generateTicketId(): string {
     .markdown blockquote { border-left: 3px solid #e2e8f0; padding-left: 0.75em; color: #64748b; margin-bottom: 0.5em; }
     .markdown a { color: #475569; text-decoration: underline; }
     .markdown hr { border-color: #e2e8f0; margin: 0.75em 0; }
+    .inlinedit-textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 0.375rem; padding: 0.5rem; font-size: 0.875rem; background: white; outline: none; }
+    .inlinedit-textarea:focus { border-color: #94a3b8; box-shadow: 0 0 0 1px #94a3b8; }
   `,
 })
 export class TicketDialog implements OnInit {
   @Input() ticket: Ticket | null = null;
   @Output() close = new EventEmitter<Ticket | null>();
 
-  isEditing = false;
   isNew = false;
   saving = false;
 
@@ -70,13 +71,15 @@ export class TicketDialog implements OnInit {
   errorMessage = '';
   headerScrolled = false;
 
-  // Files queued for upload (not yet sent to server)
-  pendingFiles: File[] = [];
+  files: File[] = [];
   uploading = false;
 
-  // The ticket ID we're creating / editing
   private editingTicketId: string | null = null;
   private editingDateReported: string | null = null;
+
+  // Inline editing state
+  editingField: string | null = null;
+  editValue = '';
 
   // Touch drag-to-close state
   dragTransform = '';
@@ -111,7 +114,7 @@ export class TicketDialog implements OnInit {
     this.dragging = false;
     const dy = this.touchCurrentY - this.touchStartY;
     if (dy > 100) {
-      this.close.emit(null);
+      this.closeSidebar();
     } else {
       this.dragTransform = '';
       this.cdr.detectChanges();
@@ -125,7 +128,6 @@ export class TicketDialog implements OnInit {
 
   ngOnInit(): void {
     this.isNew = !this.ticket;
-    this.isEditing = this.isNew;
     if (this.ticket) {
       this.editingTicketId = this.ticket.id;
       this.editingDateReported = this.ticket.dateReported;
@@ -155,66 +157,76 @@ export class TicketDialog implements OnInit {
     }
   }
 
-  startEditing(): void {
-    this.isEditing = true;
+  // ── Inline editing -------------------------------------------------------
+
+  startEditField(field: string): void {
+    this.editingField = field;
+    const valueMap: Record<string, string> = {
+      title: this.formTitle,
+      description: this.formDescription,
+      steps: this.formSteps,
+      expected: this.formExpected,
+      actual: this.formActual,
+      environment: this.formEnvironment,
+      status: this.formStatus,
+      severity: this.formSeverity,
+      service: this.formService,
+    };
+    this.editValue = valueMap[field] ?? '';
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      const el = document.querySelector(`[data-field="${field}"]`) as HTMLElement;
+      el?.focus();
+    });
   }
 
-  cancelEditing(): void {
-    if (this.isNew || !this.isEditing) {
-      this.close.emit(null);
-      return;
+  saveField(field: string): void {
+    if (this.editingField !== field) return;
+    const value = this.editValue;
+    this.editingField = null;
+
+    // Apply locally
+    switch (field) {
+      case 'title': this.formTitle = value; break;
+      case 'description': this.formDescription = value; break;
+      case 'steps': this.formSteps = value; break;
+      case 'expected': this.formExpected = value; break;
+      case 'actual': this.formActual = value; break;
+      case 'environment': this.formEnvironment = value; break;
+      case 'status': this.formStatus = value as TicketStatus; break;
+      case 'severity': this.formSeverity = value as TicketSeverity; break;
+      case 'service': this.formService = value as ServiceCategory; this.onServiceChange(); break;
     }
-    this.ngOnInit();
-    this.isEditing = false;
+
+    if (this.isNew) return; // don't persist until final save
+
+    this.persistTicket().subscribe({
+      error: (err) => {
+        this.errorMessage = 'Failed to save. Please try again.';
+        console.error('Save field failed:', err);
+        this.cdr.detectChanges();
+      },
+    });
   }
 
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (!input.files) return;
-
-    // Queue files for upload on save (we need a ticket ID first)
-    for (let i = 0; i < input.files.length; i++) {
-      this.pendingFiles.push(input.files[i]);
-    }
-    input.value = '';
-    this.errorMessage = '';
+  cancelEditField(field: string): void {
+    if (this.editingField !== field) return;
+    this.editingField = null;
+    this.editValue = '';
   }
 
-  removeAttachment(index: number): void {
-    const att = this.formAttachments[index];
-    if (!att) return;
-
-    // If attachment has an ID, delete it from server
-    const ws = this.dataService.getActiveWorkspace();
-    if (ws && att.id && this.editingTicketId) {
-      this.dataService.deleteAttachment(ws.id, this.editingTicketId, att.id).subscribe({
-        error: (err) => {
-          console.error('Failed to delete attachment:', err);
-          this.cdr.detectChanges();
-        },
-      });
-    }
-
-    // Remove from local list
-    this.formAttachments.splice(index, 1);
-
-    // Also remove from pending files if it was a pending upload
-    if (!att.id) {
-      const pendingIdx = this.pendingFiles.findIndex(f => f.name === att.name);
-      if (pendingIdx >= 0) this.pendingFiles.splice(pendingIdx, 1);
+  onFieldKeydown(event: KeyboardEvent, field: string): void {
+    if (event.key === 'Escape') {
+      this.cancelEditField(field);
+      event.preventDefault();
+    } else if (event.key === 'Enter' && !event.shiftKey && field !== 'title' && field !== 'environment') {
+      // Enter without Shift → save (multi-line fields still use Shift+Enter for newline)
     }
   }
 
-  saveTicket(): void {
-    if (!this.formTitle.trim()) return;
-
-    const ws = this.dataService.getActiveWorkspace();
-    if (!ws) return;
-
-    this.saving = true;
-    this.errorMessage = '';
-
-    const ticketPayload = {
+  /** Build full ticket payload from current form state. */
+  private buildPayload(): any {
+    return {
       id: this.isNew ? generateTicketId() : (this.editingTicketId || generateTicketId()),
       title: this.formTitle.trim(),
       service: this.formService,
@@ -230,24 +242,49 @@ export class TicketDialog implements OnInit {
       rootCause: '',
       environment: this.formEnvironment,
     };
+  }
 
-    const action$ = this.isNew
-      ? this.dataService.createTicket(ws.id, ticketPayload)
-      : this.dataService.updateTicket(ws.id, { ...ticketPayload as any, attachments: this.formAttachments });
+  private persistTicket() {
+    const ws = this.dataService.getActiveWorkspace();
+    if (!ws) throw new Error('No active workspace');
 
-    action$.subscribe({
+    const payload = this.buildPayload();
+    return this.isNew
+      ? this.dataService.createTicket(ws.id, payload)
+      : this.dataService.updateTicket(ws.id, { ...payload, attachments: this.formAttachments });
+  }
+
+  closeSidebar(): void {
+    if (this.editingField) {
+      this.saveField(this.editingField);
+    }
+    this.close.emit(null);
+  }
+
+  // ── New ticket save (bulk, not inline) -----------------------------------
+
+  saveNewTicket(): void {
+    if (!this.formTitle.trim()) return;
+    this.saving = true;
+    this.errorMessage = '';
+
+    const payload = this.buildPayload();
+
+    const ws = this.dataService.getActiveWorkspace();
+    if (!ws) return;
+
+    this.dataService.createTicket(ws.id, payload).subscribe({
       next: (saved) => {
         this.editingTicketId = saved.id;
         this.editingDateReported = saved.dateReported;
         this.cdr.detectChanges();
 
-        // Upload any pending files
-        if (this.pendingFiles.length > 0) {
+        if (this.files.length > 0) {
           this.uploading = true;
-          this.dataService.uploadAttachments(ws.id, saved.id, this.pendingFiles).subscribe({
+          this.dataService.uploadAttachments(ws.id, saved.id, this.files).subscribe({
             next: (uploadedAtts) => {
               this.formAttachments = [...this.formAttachments.filter(a => a.id), ...uploadedAtts];
-              this.pendingFiles = [];
+              this.files = [];
               this.uploading = false;
               this.saving = false;
               this.cdr.detectChanges();
@@ -275,6 +312,39 @@ export class TicketDialog implements OnInit {
         this.cdr.detectChanges();
       },
     });
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files) return;
+
+    for (let i = 0; i < input.files.length; i++) {
+      this.files.push(input.files[i]);
+    }
+    input.value = '';
+    this.errorMessage = '';
+  }
+
+  removeAttachment(index: number): void {
+    const att = this.formAttachments[index];
+    if (!att) return;
+
+    const ws = this.dataService.getActiveWorkspace();
+    if (ws && att.id && this.editingTicketId) {
+      this.dataService.deleteAttachment(ws.id, this.editingTicketId, att.id).subscribe({
+        error: (err) => {
+          console.error('Failed to delete attachment:', err);
+          this.cdr.detectChanges();
+        },
+      });
+    }
+
+    this.formAttachments.splice(index, 1);
+
+    if (!att.id) {
+      const pendingIdx = this.files.findIndex(f => f.name === att.name);
+      if (pendingIdx >= 0) this.files.splice(pendingIdx, 1);
+    }
   }
 
   showDeleteConfirm = false;
