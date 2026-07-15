@@ -316,13 +316,35 @@ export class TicketDialog implements OnInit {
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if (!input.files) return;
+    if (!input.files || input.files.length === 0) return;
 
-    for (let i = 0; i < input.files.length; i++) {
-      this.files.push(input.files[i]);
-    }
+    const selected = Array.from(input.files);
     input.value = '';
     this.errorMessage = '';
+
+    if (this.isNew) {
+      for (const f of selected) this.files.push(f);
+    } else {
+      this.uploading = true;
+      const ws = this.dataService.getActiveWorkspace();
+      if (!ws || !this.editingTicketId) {
+        this.uploading = false;
+        return;
+      }
+      this.dataService.uploadAttachments(ws.id, this.editingTicketId, selected).subscribe({
+        next: (uploaded) => {
+          this.formAttachments = [...this.formAttachments, ...uploaded];
+          this.uploading = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.uploading = false;
+          this.errorMessage = 'File upload failed.';
+          console.error('File upload failed:', err);
+          this.cdr.detectChanges();
+        },
+      });
+    }
   }
 
   removeAttachment(index: number): void {

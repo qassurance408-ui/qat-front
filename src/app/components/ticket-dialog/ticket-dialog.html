@@ -11,13 +11,12 @@
 
   <!-- Header -->
   <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 shrink-0">
-    <h2 class="text-lg font-semibold text-gray-900 relative min-w-0 flex-1">
-      <ng-container *ngIf="isNew; else viewHeader">
-        New Ticket
-      </ng-container>
-      <ng-template #viewHeader>
-        <span class="transition-opacity duration-200"
-              [class.opacity-0]="headerScrolled">
+    <div class="flex items-center gap-2 min-w-0 flex-1">
+      <h2 class="text-lg font-semibold text-gray-900 min-w-0 truncate">
+        <ng-container *ngIf="isNew; else viewHeader">
+          New Ticket
+        </ng-container>
+        <ng-template #viewHeader>
           <ng-container *ngIf="editingField === 'title'; else titleDisplay">
             <input data-field="title" [(ngModel)]="editValue"
                    (blur)="saveField('title')"
@@ -33,23 +32,32 @@
               </svg>
             </span>
           </ng-template>
-        </span>
-        <span *ngIf="!headerScrolled"
-              class="absolute inset-0 flex items-center gap-2 transition-opacity duration-200 pointer-events-none">
-          <span class="truncate max-w-[60%] invisible">{{ formTitle }}</span>
-          <span class="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded text-xs font-medium shrink-0 {{ getStatusClass(formStatus) }}">{{ formStatus }}</span>
-        </span>
-        <span *ngIf="headerScrolled"
-              class="absolute inset-0 flex items-center gap-2 transition-opacity duration-200">
-          <span class="truncate max-w-[60%]">{{ formTitle }}</span>
-          <span class="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded text-xs font-medium shrink-0 {{ getStatusClass(formStatus) }}">{{ formStatus }}</span>
-        </span>
-      </ng-template>
-    </h2>
+        </ng-template>
+      </h2>
+      <!-- Header status badge (always visible, editable) -->
+      <span *ngIf="!isNew" class="relative group shrink-0">
+        <ng-container *ngIf="editingField === 'status'; else headerStatusDisplay">
+          <select data-field="status" [(ngModel)]="editValue"
+                  (blur)="saveField('status')" (change)="saveField('status')"
+                  class="text-xs border border-slate-300 rounded bg-white px-2 py-1 outline-none focus:ring-1 focus:ring-slate-300">
+            <option *ngFor="let opt of statusOptions" [value]="opt">{{ opt }}</option>
+          </select>
+        </ng-container>
+        <ng-template #headerStatusDisplay>
+          <span class="inline-flex items-center gap-1 cursor-pointer" (click)="startEditField('status')">
+            <span class="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap {{ getStatusClass(formStatus) }}">{{ formStatus }}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </span>
+        </ng-template>
+      </span>
+    </div>
   </div>
 
   <!-- Scrollable body -->
-  <div #dialogBody class="flex-1 overflow-y-auto" (scroll)="onDialogScroll($event)">
+  <div #dialogBody class="flex-1 overflow-y-auto">
     <!-- Error Message -->
     <div *ngIf="errorMessage" class="bg-red-50 border border-red-200 text-red-700 px-4 sm:px-6 py-3 text-sm sticky top-0 z-10">
       {{ errorMessage }}
@@ -194,26 +202,6 @@
 
       <!-- Classification badges with inline edit -->
       <div class="flex flex-wrap items-center gap-2 pb-5">
-        <!-- Status -->
-        <div class="relative group">
-          <ng-container *ngIf="editingField === 'status'; else statusDisplay">
-            <select data-field="status" [(ngModel)]="editValue"
-                    (blur)="saveField('status')" (change)="saveField('status')"
-                    class="text-xs border border-slate-300 rounded bg-white px-2 py-1 outline-none focus:ring-1 focus:ring-slate-300">
-              <option *ngFor="let opt of statusOptions" [value]="opt">{{ opt }}</option>
-            </select>
-          </ng-container>
-          <ng-template #statusDisplay>
-            <span class="inline-flex items-center gap-1 cursor-pointer" (click)="startEditField('status')">
-              <span class="inline-flex items-center justify-center leading-none px-2.5 py-0.5 rounded text-xs font-medium {{ getStatusClass(formStatus) }}">{{ formStatus }}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-            </span>
-          </ng-template>
-        </div>
-
         <!-- Severity -->
         <div class="relative group">
           <ng-container *ngIf="editingField === 'severity'; else severityDisplay">
