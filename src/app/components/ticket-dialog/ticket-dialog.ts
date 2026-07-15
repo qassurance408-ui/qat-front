@@ -171,6 +171,7 @@ export class TicketDialog implements OnInit {
       status: this.formStatus,
       severity: this.formSeverity,
       service: this.formService,
+      subCategory: this.formSubCategory,
     };
     this.editValue = valueMap[field] ?? '';
     this.cdr.detectChanges();
@@ -196,6 +197,7 @@ export class TicketDialog implements OnInit {
       case 'status': this.formStatus = value as TicketStatus; break;
       case 'severity': this.formSeverity = value as TicketSeverity; break;
       case 'service': this.formService = value as ServiceCategory; this.onServiceChange(); break;
+      case 'subCategory': this.formSubCategory = value; break;
     }
 
     if (this.isNew) return; // don't persist until final save
