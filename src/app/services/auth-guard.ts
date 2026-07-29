@@ -1,34 +1,40 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
-import { map, catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
-import { getAccessToken, setAccessToken } from './auth-interceptor';
-import { apiConfig } from '../api.config';
+import { Observable, of } from 'rxjs';
+import { map, switchMap, catchError } from 'rxjs/operators';
+import { getAccessToken } from './auth-interceptor';
+import { TicketDataService } from './ticket-data';
 
 /**
  * Route guard that redirects to /login if the user is not authenticated.
  * On first load with no in-memory token, tries to refresh via the httpOnly cookie.
+ * In both cases it also ensures the current user profile is loaded so the UI
+ * (display name, avatar) is populated after a hard refresh.
  */
 export const authGuard: CanActivateFn = () => {
   const router = inject(Router);
-  const http = inject(HttpClient);
+  const data = inject(TicketDataService);
   const token = getAccessToken();
 
-  // If we already have an access token in memory, let them through
+  // Populate currentUser$ if it isn't already (e.g. after a hard refresh where
+  // the in-memory user was lost). A failure here shouldn't block navigation —
+  // the token is valid, so we still let them through.
+  const hydrateUser = (): Observable<boolean> =>
+    data.currentUser$.value
+      ? of(true)
+      : data.getAuthUser().pipe(
+          map(() => true),
+          catchError(() => of(true)),
+        );
+
+  // Already have an access token in memory — just make sure the user is loaded.
   if (token) {
-    return true;
+    return hydrateUser();
   }
 
-  // No token — try to refresh using the httpOnly cookie
-  return http.post<{ accessToken: string }>(`${apiConfig.baseUrl}/api/auth/refresh`, {}).pipe(
-    map(res => {
-      setAccessToken(res.accessToken);
-      return true;
-    }),
-    catchError(() => {
-      // Refresh failed — redirect to login
-      return of(router.parseUrl('/login'));
-    }),
+  // No token — try to refresh using the httpOnly cookie, then load the user.
+  return data.refreshAccessToken().pipe(
+    switchMap(() => hydrateUser()),
+    catchError(() => of(router.parseUrl('/login'))),
   );
 };

@@ -45,6 +45,12 @@ function generateTicketId(): string {
 export class TicketDialog implements OnInit {
   @Input() ticket: Ticket | null = null;
   @Output() close = new EventEmitter<Ticket | null>();
+  /** Asks the parent (ticket-table) to show the delete confirmation. The modal
+   *  is owned by the parent so it renders outside the transformed slide panel. */
+  @Output() requestDelete = new EventEmitter<Ticket>();
+  /** Live drag offset (px) during touch drag-to-close; null = not dragging /
+   *  reset. The parent applies this to the whole sheet so it moves as one. */
+  @Output() dragOffset = new EventEmitter<number | null>();
 
   isNew = false;
   saving = false;
@@ -82,7 +88,6 @@ export class TicketDialog implements OnInit {
   editValue = '';
 
   // Touch drag-to-close state
-  dragTransform = '';
   dragging = false;
   private touchStartY = 0;
   private touchCurrentY = 0;
@@ -105,19 +110,19 @@ export class TicketDialog implements OnInit {
     if (dy < 0) return;
     event.preventDefault();
     const translate = Math.min(dy, 200);
-    const scale = 1 - (translate / 200) * 0.05;
-    this.dragTransform = `translateY(${translate}px) scale(${scale})`;
+    // Move the whole sheet via the parent, not just this inner content.
+    this.dragOffset.emit(translate);
   }
 
   onTouchEnd(_event: TouchEvent): void {
     if (!this.dragging) return;
     this.dragging = false;
     const dy = this.touchCurrentY - this.touchStartY;
+    // Always clear the inline drag transform first: on close this lets the
+    // panel's class-based slide-out animation run; on cancel it springs back.
+    this.dragOffset.emit(null);
     if (dy > 100) {
       this.closeSidebar();
-    } else {
-      this.dragTransform = '';
-      this.cdr.detectChanges();
     }
   }
 
@@ -371,33 +376,10 @@ export class TicketDialog implements OnInit {
     }
   }
 
-  showDeleteConfirm = false;
-
   deleteTicket(): void {
     if (!this.ticket) return;
-    this.showDeleteConfirm = true;
-  }
-
-  confirmDelete(): void {
-    if (!this.ticket) return;
-    const ws = this.dataService.getActiveWorkspace();
-    if (!ws) return;
-
-    this.dataService.deleteTicket(ws.id, this.ticket.id).subscribe({
-      next: () => {
-        this.showDeleteConfirm = false;
-        this.cdr.detectChanges();
-        this.close.emit(null);
-      },
-      error: (err) => {
-        console.error('Delete failed:', err);
-        this.cdr.detectChanges();
-      },
-    });
-  }
-
-  cancelDelete(): void {
-    this.showDeleteConfirm = false;
+    // Delegate to the parent, which owns the confirmation modal + deletion.
+    this.requestDelete.emit(this.ticket);
   }
 
   formatFileSize(bytes: number): string {

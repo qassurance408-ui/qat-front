@@ -60,6 +60,13 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
   sidebarClosing = false;
   editingTicket: Ticket | null = null;
 
+  // Delete confirmation — owned here (not in the dialog) so the modal renders
+  // outside the transformed slide panel and centers on the viewport.
+  pendingDeleteTicket: Ticket | null = null;
+
+  // Live drag-to-close offset (px) forwarded from the dialog; null = not dragging.
+  dragOffset: number | null = null;
+
   statusOptions = STATUS_OPTIONS;
   severityOptions = SEVERITY_OPTIONS;
   serviceOptions = SERVICE_OPTIONS;
@@ -293,6 +300,45 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
 
   private unlockBodyScroll(): void {
     document.body.style.overflow = '';
+  }
+
+  // ── Drag-to-close (forwarded from ticket-dialog) ────────────────────────
+
+  onDragOffset(offset: number | null): void {
+    this.dragOffset = offset;
+    this.cdr.detectChanges();
+  }
+
+  // ── Delete confirmation ─────────────────────────────────────────────────
+
+  onRequestDelete(ticket: Ticket): void {
+    this.pendingDeleteTicket = ticket;
+    this.cdr.detectChanges();
+  }
+
+  cancelDeleteTicket(): void {
+    this.pendingDeleteTicket = null;
+    this.cdr.detectChanges();
+  }
+
+  confirmDeleteTicket(): void {
+    const ticket = this.pendingDeleteTicket;
+    if (!ticket) return;
+    const ws = this.dataService.getActiveWorkspace();
+    if (!ws) return;
+
+    this.dataService.deleteTicket(ws.id, ticket.id).subscribe({
+      next: () => {
+        this.pendingDeleteTicket = null;
+        this.closeSidebar();
+        this.loadTickets();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Delete failed:', err);
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   onDialogClose(savedTicket?: Ticket | null): void {
