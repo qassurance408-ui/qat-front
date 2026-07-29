@@ -19,6 +19,9 @@ export class ActivityFeed implements OnChanges, OnDestroy {
   online: OnlineUser[] = [];
   loaded = false;
 
+  /** Timestamp (ms) of the newest activity the user has seen, per workspace. */
+  private lastSeen = 0;
+
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private readonly POLL_MS = 30000;
 
@@ -35,6 +38,7 @@ export class ActivityFeed implements OnChanges, OnDestroy {
       this.online = [];
       this.loaded = false;
       if (this.activeWorkspaceId) {
+        this.lastSeen = Number(localStorage.getItem(this.seenKey()) || 0);
         this.poll();
         this.pollTimer = setInterval(() => this.poll(), this.POLL_MS);
       }
@@ -61,6 +65,8 @@ export class ActivityFeed implements OnChanges, OnDestroy {
         this.activities = res.activities;
         this.online = res.online;
         this.loaded = true;
+        // If the panel is open while polling, keep everything marked as seen.
+        if (this.open) this.markSeen();
         this.cdr.detectChanges();
       },
       error: () => {
@@ -71,10 +77,33 @@ export class ActivityFeed implements OnChanges, OnDestroy {
 
   toggle(): void {
     this.open = !this.open;
+    if (this.open) this.markSeen();
   }
 
-  get onlineCount(): number {
-    return this.online.length;
+  private seenKey(): string {
+    return `qat_activity_seen_${this.activeWorkspaceId}`;
+  }
+
+  /** Mark the currently-loaded activity as seen (clears the unseen badge). */
+  private markSeen(): void {
+    if (!this.activeWorkspaceId || this.activities.length === 0) return;
+    const newest = Math.max(...this.activities.map((a) => new Date(a.createdAt).getTime()));
+    if (newest > this.lastSeen) {
+      this.lastSeen = newest;
+      localStorage.setItem(this.seenKey(), String(newest));
+    }
+  }
+
+  /** Count of recent activity newer than last-seen, excluding the user's own. */
+  get unseenCount(): number {
+    const me = this.dataService.currentUser$.value?.id ?? null;
+    return this.activities.filter(
+      (a) => new Date(a.createdAt).getTime() > this.lastSeen && a.userId !== me
+    ).length;
+  }
+
+  get badgeLabel(): string {
+    return this.unseenCount > 9 ? '9+' : String(this.unseenCount);
   }
 
   initial(name: string): string {
