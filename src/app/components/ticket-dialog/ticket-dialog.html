@@ -36,7 +36,7 @@
   </div>
 
   <!-- Scrollable body -->
-  <div #dialogBody class="flex-1 overflow-y-auto">
+  <div #dialogBody class="flex-1 min-h-0 overflow-y-auto">
     <!-- Error Message -->
     <div *ngIf="errorMessage" class="bg-red-50 border border-red-200 text-red-700 px-4 sm:px-6 py-3 text-sm sticky top-0 z-10">
       {{ errorMessage }}

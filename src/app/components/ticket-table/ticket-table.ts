@@ -20,7 +20,10 @@ type SortDir = 'asc' | 'desc';
     .sidebar-overlay.ng-enter-active { opacity: 1; }
 
     @media (max-width: 639px) {
-      .sidebar-panel { transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+      /* Definite height so the inner body actually scrolls; snaps between a
+         half-screen default and a near-full expanded state. */
+      .sidebar-panel { height: 50vh; transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s ease; }
+      .sidebar-panel.expanded { height: 90vh; }
       .sidebar-panel.closed { transform: translateY(100%); }
       .sidebar-panel.open { transform: translateY(0); }
     }
@@ -64,8 +67,14 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
   // outside the transformed slide panel and centers on the viewport.
   pendingDeleteTicket: Ticket | null = null;
 
-  // Live drag-to-close offset (px) forwarded from the dialog; null = not dragging.
-  dragOffset: number | null = null;
+  // Mobile bottom-sheet state.
+  expanded = false;                 // false = ~50vh, true = ~90vh
+  dragY: number | null = null;      // live downward drag translate (px); null = not dragging
+
+  // Drag snap thresholds (px)
+  private readonly EXPAND_THRESHOLD = 50;
+  private readonly COLLAPSE_THRESHOLD = 100;
+  private readonly CLOSE_THRESHOLD = 100;
 
   statusOptions = STATUS_OPTIONS;
   severityOptions = SEVERITY_OPTIONS;
@@ -283,6 +292,7 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
     if (this.sidebarClosing) return;
     this.sidebarClosing = true;
     this.sidebarOpen = false;
+    this.expanded = false;   // next open starts collapsed
     this.unlockBodyScroll();
     this.cdr.detectChanges();
     setTimeout(() => {
@@ -302,10 +312,26 @@ export class TicketTable implements OnInit, OnDestroy, OnChanges {
     document.body.style.overflow = '';
   }
 
-  // ── Drag-to-close (forwarded from ticket-dialog) ────────────────────────
+  // ── Bottom-sheet drag (forwarded from ticket-dialog) ────────────────────
 
-  onDragOffset(offset: number | null): void {
-    this.dragOffset = offset;
+  onDragMove(dy: number): void {
+    // Live feedback only for downward motion; upward "expand" intent snaps on release.
+    this.dragY = dy > 0 ? Math.min(dy, 200) : 0;
+    this.cdr.detectChanges();
+  }
+
+  onDragEnd(dy: number): void {
+    this.dragY = null;
+    if (!this.expanded) {
+      if (dy < -this.EXPAND_THRESHOLD) {
+        this.expanded = true;
+      } else if (dy > this.CLOSE_THRESHOLD) {
+        this.closeSidebar();
+        return;
+      }
+    } else if (dy > this.COLLAPSE_THRESHOLD) {
+      this.expanded = false;
+    }
     this.cdr.detectChanges();
   }
 

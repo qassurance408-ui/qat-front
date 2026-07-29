@@ -44,13 +44,19 @@ function generateTicketId(): string {
 })
 export class TicketDialog implements OnInit {
   @Input() ticket: Ticket | null = null;
+  /** Whether the parent sheet is currently expanded (mobile). Lets us tell an
+   *  "expand" swipe (collapsed) apart from a "scroll content" swipe (expanded). */
+  @Input() expanded = false;
   @Output() close = new EventEmitter<Ticket | null>();
   /** Asks the parent (ticket-table) to show the delete confirmation. The modal
    *  is owned by the parent so it renders outside the transformed slide panel. */
   @Output() requestDelete = new EventEmitter<Ticket>();
-  /** Live drag offset (px) during touch drag-to-close; null = not dragging /
-   *  reset. The parent applies this to the whole sheet so it moves as one. */
-  @Output() dragOffset = new EventEmitter<number | null>();
+  /** Signed vertical drag delta (px) during a touch drag; the parent uses it
+   *  for live feedback. Positive = dragging down. */
+  @Output() dragMove = new EventEmitter<number>();
+  /** Final signed drag delta (px) on release; the parent decides whether to
+   *  expand, collapse, close, or snap back. */
+  @Output() dragEnd = new EventEmitter<number>();
 
   isNew = false;
   saving = false;
@@ -107,23 +113,23 @@ export class TicketDialog implements OnInit {
     if (!this.dragging || event.touches.length !== 1) return;
     this.touchCurrentY = event.touches[0].clientY;
     const dy = this.touchCurrentY - this.touchStartY;
-    if (dy < 0) return;
+
+    // Upward swipe while expanded = scroll the content (we're at scrollTop 0),
+    // so let the browser handle it natively — don't capture as a sheet gesture.
+    if (dy < 0 && this.expanded) return;
+
+    // Otherwise this is a sheet gesture (pull down to collapse/close, or pull
+    // up to expand while collapsed). Take over from native scrolling.
     event.preventDefault();
-    const translate = Math.min(dy, 200);
-    // Move the whole sheet via the parent, not just this inner content.
-    this.dragOffset.emit(translate);
+    this.dragMove.emit(dy);
   }
 
   onTouchEnd(_event: TouchEvent): void {
     if (!this.dragging) return;
     this.dragging = false;
     const dy = this.touchCurrentY - this.touchStartY;
-    // Always clear the inline drag transform first: on close this lets the
-    // panel's class-based slide-out animation run; on cancel it springs back.
-    this.dragOffset.emit(null);
-    if (dy > 100) {
-      this.closeSidebar();
-    }
+    // The parent decides expand / collapse / close / snap-back from the delta.
+    this.dragEnd.emit(dy);
   }
 
   onDialogScroll(event: Event): void {
