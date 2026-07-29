@@ -9,7 +9,13 @@ import { TicketDataService, ActivityItem, OnlineUser } from '../../services/tick
   selector: 'app-activity-feed',
   imports: [CommonModule],
   templateUrl: './activity-feed.html',
-  styles: ``,
+  styles: `
+    .activity-scroll { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+    .activity-scroll::-webkit-scrollbar { width: 6px; }
+    .activity-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 9999px; }
+    .activity-scroll::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+    .activity-scroll::-webkit-scrollbar-track { background: transparent; }
+  `,
 })
 export class ActivityFeed implements OnChanges, OnDestroy {
   @Input() activeWorkspaceId: string | null = null;
