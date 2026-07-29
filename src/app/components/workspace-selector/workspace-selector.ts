@@ -117,6 +117,11 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
     this.router.navigate(['/w', ws.id]);
   }
 
+  goHome(): void {
+    this.showKebab = false;
+    this.router.navigate(['/']);
+  }
+
   // ── Leave workspace ─────────────────────────────────────────────────────
 
   leaveWorkspace(): void {

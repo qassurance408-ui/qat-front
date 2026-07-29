@@ -169,10 +169,6 @@ export class WorkspacePage implements OnInit, OnDestroy {
     this.router.navigate(['/w', ws.id]);
   }
 
-  goHome(): void {
-    this.router.navigate(['/']);
-  }
-
   openCreateOnLanding(): void {
     this.showCreateOnLanding = true;
     this.newWorkspaceName = '';
