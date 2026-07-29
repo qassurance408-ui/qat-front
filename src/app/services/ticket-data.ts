@@ -38,6 +38,7 @@ export interface ActivityItem {
   id: string;
   userId: string | null;
   actorName: string;
+  actorAvatarUrl?: string | null;
   action: string;
   ticketId?: string | null;
   ticketTitle?: string | null;

@@ -52,8 +52,9 @@
       </div>
 
       <div *ngFor="let a of activities" class="px-3 py-2 flex items-start gap-2.5 hover:bg-slate-50 transition-colors">
-        <div class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[11px] font-semibold text-slate-500 shrink-0 mt-0.5">
-          {{ initial(a.actorName) }}
+        <div class="w-7 h-7 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center shrink-0 mt-0.5">
+          <img *ngIf="a.actorAvatarUrl" [src]="a.actorAvatarUrl" class="w-full h-full object-cover">
+          <span *ngIf="!a.actorAvatarUrl" class="text-[11px] font-semibold text-slate-500">{{ initial(a.actorName) }}</span>
         </div>
         <div class="min-w-0 flex-1">
           <div class="text-sm text-slate-700 leading-snug">
