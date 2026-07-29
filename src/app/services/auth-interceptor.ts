@@ -32,7 +32,14 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((err) => {
-      if (err instanceof HttpErrorResponse && err.status === 401 && !req.url.includes('/auth/refresh')) {
+      // A 401 from an auth entry point (login/register/refresh) is a real
+      // credential failure, not an expired session — don't try to refresh,
+      // or the "Refresh token not found" error masks the real message.
+      const isAuthEntryPoint =
+        req.url.includes('/auth/login') ||
+        req.url.includes('/auth/register') ||
+        req.url.includes('/auth/refresh');
+      if (err instanceof HttpErrorResponse && err.status === 401 && !isAuthEntryPoint) {
         return refreshAndRetry(req, next);
       }
       return throwError(() => err);
