@@ -11,9 +11,10 @@
 
     <!-- Kebab dropdown -->
     <div *ngIf="showKebab"
+         animate.enter="anim-drop-enter" animate.leave="anim-drop-leave"
          class="absolute right-0 top-full mt-1.5 w-52 max-w-[calc(100vw-1.5rem)] bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 z-50 py-1 overflow-y-auto">
       <!-- Main menu -->
-      <ng-container *ngIf="!showSwitchSubmenu">
+      <div *ngIf="!showSwitchSubmenu" animate.enter="anim-slide-left-enter">
         <button (click)="goHome()"
                 class="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2.5 truncate">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 shrink-0">
@@ -67,10 +68,10 @@
           </svg>
           Leave Workspace
         </button>
-      </ng-container>
+      </div>
 
       <!-- Workspace switcher submenu -->
-      <ng-container *ngIf="showSwitchSubmenu">
+      <div *ngIf="showSwitchSubmenu" animate.enter="anim-slide-right-enter">
         <button (click)="goBackToMainMenu()"
                 class="w-full text-left px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-2 truncate border-b border-slate-100">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-slate-400">
@@ -104,7 +105,7 @@
             <polyline points="20 6 9 17 4 12"/>
           </svg>
         </button>
-      </ng-container>
+      </div>
     </div>
   </div>
 </div>
@@ -112,7 +113,7 @@
 <!-- ====================================================================== -->
 <!-- Delete Confirmation Dialog                                              -->
 <!-- ====================================================================== -->
-<div *ngIf="showDeleteConfirm" class="fixed inset-0 z-50">
+<div *ngIf="showDeleteConfirm" animate.enter="anim-fade-enter" animate.leave="anim-fade-leave" class="fixed inset-0 z-50">
   <div class="absolute inset-0 bg-black/40" (click)="showDeleteConfirm = false"></div>
   <div class="relative z-10 flex items-center justify-center min-h-screen p-4 pointer-events-none">
     <div class="bg-white sm:rounded shadow-2xl w-full max-w-sm mx-auto overflow-hidden pointer-events-auto">
@@ -133,7 +134,7 @@
 <!-- ====================================================================== -->
 <!-- Leave Workspace Confirmation Dialog                                      -->
 <!-- ====================================================================== -->
-<div *ngIf="showLeaveConfirm" class="fixed inset-0 z-50">
+<div *ngIf="showLeaveConfirm" animate.enter="anim-fade-enter" animate.leave="anim-fade-leave" class="fixed inset-0 z-50">
   <div class="absolute inset-0 bg-black/40" (click)="showLeaveConfirm = false"></div>
   <div class="relative z-10 flex items-center justify-center min-h-screen p-4 pointer-events-none">
     <div class="bg-white sm:rounded shadow-2xl w-full max-w-sm mx-auto overflow-hidden pointer-events-auto">
@@ -154,7 +155,7 @@
 <!-- ====================================================================== -->
 <!-- Share / Invite Dialog                                                   -->
 <!-- ====================================================================== -->
-<div *ngIf="showInviteDialog" class="fixed inset-0 z-50">
+<div *ngIf="showInviteDialog" animate.enter="anim-fade-enter" animate.leave="anim-fade-leave" class="fixed inset-0 z-50">
   <div class="absolute inset-0 bg-black/40" (click)="closeInviteDialog()"></div>
   <div class="relative z-10 flex items-center justify-center min-h-screen p-4 pointer-events-none">
     <div class="bg-white sm:rounded shadow-2xl w-full max-w-md mx-auto overflow-y-auto pointer-events-auto">
@@ -205,7 +206,7 @@
 <!-- ====================================================================== -->
 <!-- Members Dialog                                                          -->
 <!-- ====================================================================== -->
-<div *ngIf="showMembersDialog" class="fixed inset-0 z-50">
+<div *ngIf="showMembersDialog" animate.enter="anim-fade-enter" animate.leave="anim-fade-leave" class="fixed inset-0 z-50">
   <div class="absolute inset-0 bg-black/40" (click)="closeMembersDialog()"></div>
   <div class="relative z-10 flex items-center justify-center min-h-screen p-4 pointer-events-none">
     <div class="bg-white sm:rounded shadow-2xl w-full max-w-md mx-auto overflow-y-auto pointer-events-auto">
@@ -268,7 +269,7 @@
 <!-- ====================================================================== -->
 <!-- Remove Member Confirmation Dialog                                       -->
 <!-- ====================================================================== -->
-<div *ngIf="confirmRemoveMember" class="fixed inset-0 z-[60]">
+<div *ngIf="confirmRemoveMember" animate.enter="anim-fade-enter" animate.leave="anim-fade-leave" class="fixed inset-0 z-[60]">
   <div class="absolute inset-0 bg-black/40" (click)="cancelRemoveConfirm()"></div>
   <div class="relative z-10 flex items-center justify-center min-h-screen p-4 pointer-events-none">
     <div class="bg-white sm:rounded shadow-2xl w-full max-w-sm mx-auto overflow-hidden pointer-events-auto">

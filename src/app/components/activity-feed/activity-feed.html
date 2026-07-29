@@ -16,6 +16,7 @@
 
   <!-- Dropdown: fixed panel under the header on mobile, anchored menu on desktop -->
   <div *ngIf="open"
+       animate.enter="anim-drop-enter" animate.leave="anim-drop-leave"
        class="fixed left-2 right-2 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-1.5 sm:w-80 max-w-[calc(100vw-1rem)] bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 z-50 overflow-hidden">
 
     <!-- Online now -->

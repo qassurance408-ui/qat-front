@@ -24,6 +24,7 @@
 
       <!-- Filter Dropdown -->
       <div *ngIf="filterOpen"
+           animate.enter="anim-drop-enter" animate.leave="anim-drop-leave"
            class="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 z-50 p-4 space-y-3">
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
@@ -134,6 +135,7 @@
             </div>
             <!-- Quick-edit dropdown -->
             <div *ngIf="editingField?.ticketId === t.id && editingField?.field === 'service'"
+                 animate.enter="anim-drop-enter" animate.leave="anim-drop-leave"
                  class="quick-edit-dropdown fixed z-50 bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 py-1 min-w-[180px]"
                  [style.top.px]="editingField.top"
                  [style.right.px]="editingField.right"
@@ -161,6 +163,7 @@
             </div>
             <!-- Quick-edit dropdown -->
             <div *ngIf="editingField?.ticketId === t.id && editingField?.field === 'status'"
+                 animate.enter="anim-drop-enter" animate.leave="anim-drop-leave"
                  class="quick-edit-dropdown fixed z-50 bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 py-1 min-w-[180px]"
                  [style.top.px]="editingField.top"
                  [style.right.px]="editingField.right"
@@ -187,6 +190,7 @@
             </div>
             <!-- Quick-edit dropdown -->
             <div *ngIf="editingField?.ticketId === t.id && editingField?.field === 'severity'"
+                 animate.enter="anim-drop-enter" animate.leave="anim-drop-leave"
                  class="quick-edit-dropdown fixed z-50 bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 py-1 min-w-[180px]"
                  [style.top.px]="editingField.top"
                  [style.right.px]="editingField.right"
@@ -271,7 +275,7 @@
 
 <!-- Delete Ticket Confirmation Modal (rendered outside the transformed panel
      so it centers on the viewport, not the ticket window) -->
-<div *ngIf="pendingDeleteTicket" class="fixed inset-0 z-[60]">
+<div *ngIf="pendingDeleteTicket" animate.enter="anim-fade-enter" animate.leave="anim-fade-leave" class="fixed inset-0 z-[60]">
   <div class="absolute inset-0 bg-black/40" (click)="cancelDeleteTicket()"></div>
   <div class="relative z-10 flex items-center justify-center min-h-screen p-4 pointer-events-none">
     <div class="bg-white rounded shadow-2xl w-full max-w-sm mx-auto overflow-hidden pointer-events-auto">

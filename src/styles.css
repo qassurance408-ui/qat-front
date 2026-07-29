@@ -14,3 +14,48 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Shared enter/leave animations (used with Angular's animate.enter/leave).
+   Global (unencapsulated) so any component template can reference them.
+   Respects reduced-motion preferences.
+   ───────────────────────────────────────────────────────────────────────── */
+@keyframes qatDropIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes qatDropOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-6px) scale(0.98); }
+}
+.anim-drop-enter { animation: qatDropIn 0.16s ease-out; transform-origin: top; }
+.anim-drop-leave { animation: qatDropOut 0.13s ease-in; transform-origin: top; }
+
+@keyframes qatFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes qatFadeOut { from { opacity: 1; } to { opacity: 0; } }
+.anim-fade-enter { animation: qatFadeIn 0.18s ease-out; }
+.anim-fade-leave { animation: qatFadeOut 0.15s ease-in; }
+
+@keyframes qatSlideUpIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes qatSlideUpOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(8px); }
+}
+.anim-slideup-enter { animation: qatSlideUpIn 0.2s ease-out; }
+.anim-slideup-leave { animation: qatSlideUpOut 0.15s ease-in; }
+
+/* Submenu swaps (e.g. kebab main ↔ workspace switcher). */
+@keyframes qatSlideInFromRight { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes qatSlideInFromLeft  { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+.anim-slide-right-enter { animation: qatSlideInFromRight 0.18s ease-out; }
+.anim-slide-left-enter  { animation: qatSlideInFromLeft 0.18s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-drop-enter, .anim-drop-leave,
+  .anim-fade-enter, .anim-fade-leave,
+  .anim-slideup-enter, .anim-slideup-leave,
+  .anim-slide-right-enter, .anim-slide-left-enter { animation: none; }
+}

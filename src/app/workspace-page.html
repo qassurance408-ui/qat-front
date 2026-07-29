@@ -75,6 +75,7 @@
 
             <!-- Avatar dropdown -->
             <div *ngIf="showAvatarDropdown"
+                 animate.enter="anim-drop-enter" animate.leave="anim-drop-leave"
                  class="absolute right-0 top-full mt-1.5 w-56 bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 z-50 overflow-hidden">
               <!-- User card -->
               <div class="px-3 py-3 flex items-center gap-2.5 border-b border-slate-100">
@@ -119,7 +120,14 @@
   <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
     <div *ngIf="!hasActiveWorkspace" class="py-12 sm:py-16 max-w-lg mx-auto px-4">
       <!-- Creating a workspace (overrides everything) -->
-      <ng-container *ngIf="showCreateOnLanding">
+      <div *ngIf="showCreateOnLanding" animate.enter="anim-slideup-enter">
+        <button (click)="showCreateOnLanding = false" type="button"
+                class="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 transition-colors mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Back
+        </button>
         <div class="text-center">
           <div class="w-14 h-14 mx-auto mb-4 flex items-center justify-center text-slate-500">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -141,12 +149,8 @@
               {{ creatingWorkspace ? 'Creating…' : 'Create' }}
             </button>
           </div>
-          <button (click)="showCreateOnLanding = false"
-                  class="mt-3 text-xs text-slate-400 hover:text-slate-600 transition-colors">
-            Cancel
-          </button>
         </div>
-      </ng-container>
+      </div>
 
       <!-- Skeleton while loading workspaces -->
       <ng-container *ngIf="loading && !showCreateOnLanding">
@@ -257,7 +261,7 @@
   </main>
 
   <!-- Join Workspace Dialog -->
-  <div *ngIf="showJoinDialog" class="fixed inset-0 z-50">
+  <div *ngIf="showJoinDialog" animate.enter="anim-fade-enter" animate.leave="anim-fade-leave" class="fixed inset-0 z-50">
     <div class="absolute inset-0 bg-black/40" (click)="closeJoinDialog()"></div>
     <div class="relative z-10 flex items-center justify-center min-h-screen p-4 pointer-events-none">
       <div class="bg-white sm:rounded shadow-2xl w-full max-w-md mx-auto overflow-y-auto pointer-events-auto">
