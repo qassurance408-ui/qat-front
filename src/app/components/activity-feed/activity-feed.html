@@ -9,7 +9,7 @@
     </svg>
     <!-- Online count badge -->
     <span *ngIf="onlineCount > 0"
-          class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-emerald-500 text-white text-[10px] font-bold leading-none shadow-sm">
+          class="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-slate-700 text-white text-[10px] font-bold leading-none shadow-sm">
       {{ onlineCount }}
     </span>
   </button>
@@ -22,10 +22,9 @@
     <div class="px-3 py-2.5 border-b border-slate-100">
       <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Online now</div>
       <div *ngIf="online.length > 0; else noOnline" class="flex items-center flex-wrap gap-2">
-        <div *ngFor="let u of online" class="relative w-7 h-7 rounded-full overflow-hidden bg-slate-100 shrink-0" [title]="u.displayName">
+        <div *ngFor="let u of online" class="w-7 h-7 rounded-full overflow-hidden bg-slate-100 shrink-0" [title]="u.displayName">
           <img *ngIf="u.avatarUrl" [src]="u.avatarUrl" class="w-full h-full object-cover">
           <div *ngIf="!u.avatarUrl" class="w-full h-full flex items-center justify-center text-[11px] font-semibold text-slate-500">{{ initial(u.displayName) }}</div>
-          <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white"></span>
         </div>
       </div>
       <ng-template #noOnline>
