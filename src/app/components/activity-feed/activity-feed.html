@@ -1,0 +1,69 @@
+<div class="relative">
+  <!-- Trigger button -->
+  <button (click)="toggle(); $event.stopPropagation()"
+          class="relative flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          [class.text-slate-700]="open"
+          title="Activity & online members">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+    </svg>
+    <!-- Online count badge -->
+    <span *ngIf="onlineCount > 0"
+          class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-emerald-500 text-white text-[10px] font-bold leading-none shadow-sm">
+      {{ onlineCount }}
+    </span>
+  </button>
+
+  <!-- Dropdown -->
+  <div *ngIf="open"
+       class="absolute right-0 top-full mt-1.5 w-80 max-w-[calc(100vw-1.5rem)] bg-white border border-slate-200 rounded shadow-lg shadow-slate-200/50 z-50 overflow-hidden">
+
+    <!-- Online now -->
+    <div class="px-3 py-2.5 border-b border-slate-100">
+      <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Online now</div>
+      <div *ngIf="online.length > 0; else noOnline" class="flex items-center flex-wrap gap-2">
+        <div *ngFor="let u of online" class="relative w-7 h-7 rounded-full overflow-hidden bg-slate-100 shrink-0" [title]="u.displayName">
+          <img *ngIf="u.avatarUrl" [src]="u.avatarUrl" class="w-full h-full object-cover">
+          <div *ngIf="!u.avatarUrl" class="w-full h-full flex items-center justify-center text-[11px] font-semibold text-slate-500">{{ initial(u.displayName) }}</div>
+          <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white"></span>
+        </div>
+      </div>
+      <ng-template #noOnline>
+        <div class="text-xs text-slate-400">No one else is online right now.</div>
+      </ng-template>
+    </div>
+
+    <!-- Recent activity -->
+    <div class="max-h-80 overflow-y-auto">
+      <div class="px-3 py-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider sticky top-0 bg-white z-10">Recent activity</div>
+
+      <!-- Loading skeleton (first load) -->
+      <div *ngIf="!loaded" class="px-3 pb-2 space-y-2">
+        <div *ngFor="let i of [1,2,3]" class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-full bg-slate-200 animate-pulse shrink-0"></div>
+          <div class="flex-1 space-y-1">
+            <div class="h-3.5 w-3/4 bg-slate-200 rounded animate-pulse"></div>
+            <div class="h-2.5 w-16 bg-slate-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="loaded && activities.length === 0" class="px-3 py-6 text-center text-xs text-slate-400">
+        No activity yet.
+      </div>
+
+      <div *ngFor="let a of activities" class="px-3 py-2 flex items-start gap-2.5 hover:bg-slate-50 transition-colors">
+        <div class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[11px] font-semibold text-slate-500 shrink-0 mt-0.5">
+          {{ initial(a.actorName) }}
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="text-sm text-slate-700 leading-snug">
+            <span class="font-medium text-slate-900">{{ a.actorName }}</span>
+            {{ describe(a) }}
+          </div>
+          <div class="text-[11px] text-slate-400 mt-0.5">{{ relativeTime(a.createdAt) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

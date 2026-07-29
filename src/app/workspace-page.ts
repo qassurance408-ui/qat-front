@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { skip } from 'rxjs/operators';
 import { WorkspaceSelector } from './components/workspace-selector/workspace-selector';
 import { TicketTable } from './components/ticket-table/ticket-table';
+import { ActivityFeed } from './components/activity-feed/activity-feed';
 import { TicketDataService, AuthUser } from './services/ticket-data';
 import { Workspace } from './models/ticket';
 
@@ -24,6 +25,7 @@ function generateWorkspaceId(): string {
     FormsModule,
     WorkspaceSelector,
     TicketTable,
+    ActivityFeed,
   ],
   templateUrl: './workspace-page.html',
   styles: ``,

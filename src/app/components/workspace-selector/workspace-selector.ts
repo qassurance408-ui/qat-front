@@ -12,6 +12,8 @@ interface WorkspaceMember {
   email: string;
   role: 'OWNER' | 'MEMBER';
   joinedAt: string;
+  avatarUrl?: string | null;
+  online?: boolean;
 }
 
 @Component({

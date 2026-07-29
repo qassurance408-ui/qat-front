@@ -30,6 +30,30 @@ interface WorkspaceMember {
   email: string;
   role: 'OWNER' | 'MEMBER';
   joinedAt: string;
+  avatarUrl?: string | null;
+  online?: boolean;
+}
+
+export interface ActivityItem {
+  id: string;
+  userId: string | null;
+  actorName: string;
+  action: string;
+  ticketId?: string | null;
+  ticketTitle?: string | null;
+  detail?: string | null;
+  createdAt: string;
+}
+
+export interface OnlineUser {
+  userId: string;
+  displayName: string;
+  avatarUrl?: string | null;
+}
+
+export interface ActivityResponse {
+  activities: ActivityItem[];
+  online: OnlineUser[];
 }
 
 interface WorkspaceResponse {
@@ -274,6 +298,11 @@ export class TicketDataService {
 
   removeMember(workspaceId: string, userId: string): Observable<void> {
     return this.http.delete<void>(`${this.api}/workspaces/${workspaceId}/members/${userId}`);
+  }
+
+  /** Heartbeats presence and returns recent activity + who's online. */
+  getActivity(workspaceId: string): Observable<ActivityResponse> {
+    return this.http.get<ActivityResponse>(`${this.api}/workspaces/${workspaceId}/activity`);
   }
 
   // ── Tickets ─────────────────────────────────────────────────────────────

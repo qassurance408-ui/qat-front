@@ -53,6 +53,9 @@
           </div>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
+          <app-activity-feed *ngIf="hasActiveWorkspace"
+                             class="shrink-0"
+                             [activeWorkspaceId]="activeWorkspaceId"></app-activity-feed>
           <app-workspace-selector class="shrink-0"></app-workspace-selector>
 
           <!-- Avatar circle -->
