@@ -1,6 +1,6 @@
 <div class="relative">
   <!-- Trigger button -->
-  <button (click)="toggle(); $event.stopPropagation()"
+  <button (click)="toggle()"
           class="relative flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           [class.text-slate-700]="open"
           title="Activity & online members">
@@ -9,7 +9,7 @@
     </svg>
     <!-- Online count badge -->
     <span *ngIf="onlineCount > 0"
-          class="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-slate-700 text-white text-[10px] font-bold leading-none shadow-sm">
+          class="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-slate-400 text-white text-[10px] font-semibold leading-none shadow-sm">
       {{ onlineCount }}
     </span>
   </button>
@@ -57,12 +57,17 @@
         </div>
         <div class="min-w-0 flex-1">
           <div class="text-sm text-slate-700 leading-snug">
-            <span class="font-medium text-slate-900">{{ a.actorName }}</span>
+            <span class="font-medium text-slate-900">{{ actorLabel(a) }}</span>
             {{ describe(a) }}
           </div>
           <div class="text-[11px] text-slate-400 mt-0.5">{{ relativeTime(a.createdAt) }}</div>
         </div>
       </div>
+    </div>
+
+    <!-- Footer note -->
+    <div class="px-3 py-2 border-t border-slate-100 text-[11px] text-slate-400 leading-snug">
+      You may need to refresh the page to see the latest changes to this workspace.
     </div>
   </div>
 </div>

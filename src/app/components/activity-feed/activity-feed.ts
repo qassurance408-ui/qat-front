@@ -81,6 +81,12 @@ export class ActivityFeed implements OnChanges, OnDestroy {
     return (name?.charAt(0) || '?').toUpperCase();
   }
 
+  /** Show "You" when the activity was performed by the current user. */
+  actorLabel(a: ActivityItem): string {
+    const me = this.dataService.currentUser$.value?.id ?? null;
+    return a.userId && a.userId === me ? 'You' : a.actorName;
+  }
+
   /** Compact relative time, e.g. "just now", "5m ago", "3h ago", "2d ago". */
   relativeTime(iso: string): string {
     const then = new Date(iso).getTime();
