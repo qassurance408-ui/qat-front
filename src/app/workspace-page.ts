@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { skip } from 'rxjs/operators';
 import { WorkspaceSelector } from './components/workspace-selector/workspace-selector';
@@ -68,22 +68,17 @@ export class WorkspacePage implements OnInit, OnDestroy {
   joinError = '';
   joinSuccess = '';
 
-  private wsSub: Subscription | null = null;
+  private routeWorkspaceId: string | null = null;
   private subs: Subscription[] = [];
 
   constructor(
     private dataService: TicketDataService,
     private router: Router,
+    private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
-    this.syncAll();
-
-    this.wsSub = this.dataService.activeWorkspaceChanged$.subscribe(() => {
-      this.syncAll();
-    });
-
     // Track current user for avatar display
     this.currentUser = this.dataService.currentUser$.value;
     this.subs.push(
@@ -101,56 +96,66 @@ export class WorkspacePage implements OnInit, OnDestroy {
         }
       }),
     );
+
+    // The URL is the source of truth for the active workspace.
+    this.subs.push(
+      this.route.paramMap.subscribe(params => {
+        this.routeWorkspaceId = params.get('workspaceId');
+        this.resolveWorkspace();
+      }),
+    );
   }
 
   ngOnDestroy(): void {
-    this.wsSub?.unsubscribe();
     this.subs.forEach(s => s.unsubscribe());
   }
 
-  private syncAll(): void {
-    const stored = this.dataService.getActiveWorkspace();
-    this.hasActiveWorkspace = stored !== null;
-    this.activeWorkspaceId = stored?.id ?? null;
-    this.activeWorkspaceName = stored?.name ?? null;
-    this.activeWorkspaceRole = stored?.role ?? null;
+  /**
+   * Resolve the active workspace from the current route param:
+   * a valid /w/:id sets it active, an unknown id redirects home, and
+   * / (no param) shows the workspace picker.
+   */
+  private resolveWorkspace(): void {
+    const id = this.routeWorkspaceId;
+    this.loading = true;
     this.showCreateOnLanding = false;
 
-    // Fetch workspaces from server and update local cache
     this.dataService.getWorkspaces().subscribe({
       next: (list) => {
-        try {
-          this.workspaces = list.map(w => ({
-            id: w.id,
-            name: w.name,
-            createdAt: w.createdAt,
-            ownerId: w.ownerId,
-            role: w.role,
-          }));
+        this.workspaces = list.map(w => ({
+          id: w.id,
+          name: w.name,
+          createdAt: w.createdAt,
+          ownerId: w.ownerId,
+          role: w.role,
+        }));
 
-          // If we have a stored active workspace, refresh its name from server data
-          if (stored) {
-            const match = list.find(w => w.id === stored.id);
-            if (match) {
-              this.activeWorkspaceName = match.name;
-              this.activeWorkspaceRole = match.role;
-              // Silently update localStorage without emitting (avoids infinite loop)
-              this.dataService.refreshActiveWorkspaceName(match.name);
-            } else {
-              // Stored workspace no longer exists on server — go to landing
-              this.dataService.setActiveWorkspace(null);
-              this.hasActiveWorkspace = false;
-              this.activeWorkspaceId = null;
-              this.activeWorkspaceName = null;
-              this.activeWorkspaceRole = null;
-            }
+        if (id) {
+          const match = this.workspaces.find(w => w.id === id);
+          if (match) {
+            // Sync the service (localStorage + emit) so child components load it.
+            this.dataService.setActiveWorkspace(match);
+            this.hasActiveWorkspace = true;
+            this.activeWorkspaceId = match.id;
+            this.activeWorkspaceName = match.name;
+            this.activeWorkspaceRole = match.role ?? null;
+          } else {
+            // Not a member / stale id — go home.
+            this.dataService.setActiveWorkspace(null);
+            this.router.navigate(['/']);
+            return;
           }
-        } catch (e) {
-          console.error('Error processing workspaces:', e);
-        } finally {
-          this.loading = false;
-          this.cdr.detectChanges();
+        } else {
+          // Home picker.
+          this.dataService.setActiveWorkspace(null);
+          this.hasActiveWorkspace = false;
+          this.activeWorkspaceId = null;
+          this.activeWorkspaceName = null;
+          this.activeWorkspaceRole = null;
         }
+
+        this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Failed to fetch workspaces:', err);
@@ -161,7 +166,11 @@ export class WorkspacePage implements OnInit, OnDestroy {
   }
 
   selectWorkspace(ws: Workspace): void {
-    this.dataService.setActiveWorkspace(ws);
+    this.router.navigate(['/w', ws.id]);
+  }
+
+  goHome(): void {
+    this.router.navigate(['/']);
   }
 
   openCreateOnLanding(): void {
@@ -180,15 +189,9 @@ export class WorkspacePage implements OnInit, OnDestroy {
     this.dataService.createWorkspace(id, name).subscribe({
       next: (ws) => {
         this.creatingWorkspace = false;
-        this.dataService.setActiveWorkspace({
-          id: ws.id,
-          name: ws.name,
-          createdAt: ws.createdAt,
-          ownerId: ws.ownerId,
-          role: ws.role,
-        });
         this.showCreateOnLanding = false;
         this.newWorkspaceName = '';
+        this.router.navigate(['/w', ws.id]);
       },
       error: (err) => {
         this.creatingWorkspace = false;
@@ -225,11 +228,10 @@ export class WorkspacePage implements OnInit, OnDestroy {
         this.joining = false;
         this.joinSuccess = `Joined "${ws.name}" successfully!`;
         this.cdr.detectChanges();
-        this.syncAll();
         setTimeout(() => {
           this.closeJoinDialog();
-          this.cdr.detectChanges();
-        }, 1500);
+          this.router.navigate(['/w', ws.id]);
+        }, 1200);
       },
       error: (err) => {
         this.joining = false;

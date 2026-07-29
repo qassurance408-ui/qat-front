@@ -112,10 +112,9 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
   }
 
   selectWorkspace(ws: Workspace): void {
-    this.dataService.setActiveWorkspace(ws);
-    this.activeWorkspace = ws;
     this.showKebab = false;
     this.showSwitchSubmenu = false;
+    this.router.navigate(['/w', ws.id]);
   }
 
   // ── Leave workspace ─────────────────────────────────────────────────────
@@ -131,11 +130,7 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
 
     this.dataService.removeMember(this.activeWorkspace.id, this.dataService.currentUser$.value.id).subscribe({
       next: () => {
-        const stored = this.dataService.getActiveWorkspace();
-        if (stored && stored.id === this.activeWorkspace!.id) {
-          this.dataService.setActiveWorkspace(null);
-        }
-        this.loadWorkspaces();
+        this.router.navigate(['/']);
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -157,7 +152,7 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
     this.dataService.deleteWorkspace(this.activeWorkspace.id).subscribe({
       next: () => {
         this.showDeleteConfirm = false;
-        this.dataService.setActiveWorkspace(null);
+        this.router.navigate(['/']);
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -165,11 +160,6 @@ export class WorkspaceSelector implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
     });
-  }
-
-  goHome(): void {
-    this.showKebab = false;
-    this.dataService.setActiveWorkspace(null);
   }
 
   // ── Export ──────────────────────────────────────────────────────────────
