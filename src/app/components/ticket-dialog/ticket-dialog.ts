@@ -414,7 +414,7 @@ export class TicketDialog implements OnInit {
   }
 
   renderMarkdown(text: string): string {
-    if (!text || text === '—') return '—';
+    if (!text || text === '-') return '-';
     const html = marked.parse(text) as string;
     return html;
   }

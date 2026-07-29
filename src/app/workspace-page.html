@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen flex flex-col bg-gray-50">
   <!-- Toast notification -->
   <div *ngIf="showToast"
        class="fixed top-0 left-0 right-0 z-[100] flex items-center justify-center px-4 pt-3 pointer-events-none">
@@ -117,7 +117,7 @@
   </header>
 
   <!-- Main Content -->
-  <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+  <main class="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
     <div *ngIf="!hasActiveWorkspace" class="py-12 sm:py-16 max-w-lg mx-auto px-4">
       <!-- Creating a workspace (overrides everything) -->
       <div *ngIf="showCreateOnLanding" animate.enter="anim-slideup-enter">
@@ -184,7 +184,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
-              Get Started &mdash; Create Workspace
+              Get Started - Create Workspace
             </button>
             <button (click)="openJoinOnLanding()"
                     class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded hover:bg-slate-50 transition-colors shadow-sm">
@@ -299,9 +299,9 @@
   </div>
 
   <!-- Footer -->
-  <footer class="border-t border-gray-200 mt-8 sm:mt-12">
+  <footer class="border-t border-gray-200">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4 text-center text-xs text-gray-400">
-      QAT — AletCloud QA Ticket Tracker
+      QAT - AletCloud QA Ticket Tracker
     </div>
   </footer>
 </div>

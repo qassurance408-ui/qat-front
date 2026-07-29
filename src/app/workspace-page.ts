@@ -232,7 +232,7 @@ export class WorkspacePage implements OnInit, OnDestroy {
       error: (err) => {
         this.joining = false;
         if (err.status === 404) {
-          this.joinError = 'Invalid invite code — workspace not found.';
+          this.joinError = 'Invalid invite code. Workspace not found.';
         } else if (err.status === 409) {
           this.joinError = 'You are already a member of this workspace.';
         } else {
