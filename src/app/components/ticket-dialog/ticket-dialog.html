@@ -184,11 +184,13 @@
         <!-- Status -->
         <div class="relative group">
           <ng-container *ngIf="editingField === 'status'; else statusDisplay">
-            <select data-field="status" [(ngModel)]="editValue"
-                    (blur)="saveField('status')" (change)="saveField('status')"
-                    class="text-xs border border-slate-300 rounded bg-white px-2 py-1 outline-none focus:ring-1 focus:ring-slate-300">
-              <option *ngFor="let opt of statusOptions" [value]="opt">{{ opt }}</option>
-            </select>
+            <app-custom-select class="w-36"
+              [options]="statusOptions"
+              [value]="formStatus"
+              [autoOpen]="true"
+              (valueChange)="editValue = $event; saveField('status')"
+              (closed)="cancelEditField('status')"
+            ></app-custom-select>
           </ng-container>
           <ng-template #statusDisplay>
             <span class="inline-flex items-center gap-1 cursor-pointer" (click)="startEditField('status')">
@@ -204,11 +206,13 @@
         <!-- Severity -->
         <div class="relative group">
           <ng-container *ngIf="editingField === 'severity'; else severityDisplay">
-            <select data-field="severity" [(ngModel)]="editValue"
-                    (blur)="saveField('severity')" (change)="saveField('severity')"
-                    class="text-xs border border-slate-300 rounded bg-white px-2 py-1 outline-none focus:ring-1 focus:ring-slate-300">
-              <option *ngFor="let opt of severityOptions" [value]="opt">{{ opt }}</option>
-            </select>
+            <app-custom-select class="w-36"
+              [options]="severityOptions"
+              [value]="formSeverity"
+              [autoOpen]="true"
+              (valueChange)="editValue = $event; saveField('severity')"
+              (closed)="cancelEditField('severity')"
+            ></app-custom-select>
           </ng-container>
           <ng-template #severityDisplay>
             <span class="inline-flex items-center gap-1 cursor-pointer" (click)="startEditField('severity')">
@@ -224,11 +228,13 @@
         <!-- Service -->
         <div class="relative group">
           <ng-container *ngIf="editingField === 'service'; else serviceDisplay">
-            <select data-field="service" [(ngModel)]="editValue"
-                    (blur)="saveField('service')" (change)="saveField('service')"
-                    class="text-xs border border-slate-300 rounded bg-white px-2 py-1 outline-none focus:ring-1 focus:ring-slate-300">
-              <option *ngFor="let opt of serviceOptions" [value]="opt">{{ opt }}</option>
-            </select>
+            <app-custom-select class="w-44"
+              [options]="serviceOptions"
+              [value]="formService"
+              [autoOpen]="true"
+              (valueChange)="editValue = $event; saveField('service')"
+              (closed)="cancelEditField('service')"
+            ></app-custom-select>
           </ng-container>
           <ng-template #serviceDisplay>
             <span class="inline-flex items-center gap-1 cursor-pointer" (click)="startEditField('service')">
@@ -244,12 +250,14 @@
         <!-- Sub-Category -->
         <div *ngIf="formSubCategory || subCategoryOptions" class="relative group">
           <ng-container *ngIf="editingField === 'subCategory'; else subDisplay">
-            <select data-field="subCategory" [(ngModel)]="editValue"
-                    (blur)="saveField('subCategory')" (change)="saveField('subCategory')"
-                    class="text-xs border border-slate-300 rounded bg-white px-2 py-1 outline-none focus:ring-1 focus:ring-slate-300">
-              <option value="">-</option>
-              <option *ngFor="let opt of subCategoryOptions" [value]="opt">{{ opt }}</option>
-            </select>
+            <app-custom-select class="w-44"
+              [options]="subCategoryOptions || []"
+              [value]="formSubCategory"
+              [autoOpen]="true"
+              placeholder="-"
+              (valueChange)="editValue = $event; saveField('subCategory')"
+              (closed)="cancelEditField('subCategory')"
+            ></app-custom-select>
           </ng-container>
           <ng-template #subDisplay>
             <span class="inline-flex items-center gap-1 cursor-pointer" (click)="startEditField('subCategory')">

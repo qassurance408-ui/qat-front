@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, HostListener, ElementRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, ElementRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -7,7 +7,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './custom-select.html',
   styles: [':host { display: block; }'],
 })
-export class CustomSelect {
+export class CustomSelect implements OnInit {
   @Input() options: string[] = [];
   @Input() labels: string[] | null = null;
   @Input() placeholder: string = '';
@@ -16,10 +16,18 @@ export class CustomSelect {
   @Input() allowEmpty: boolean = true;
   @Input() disabledValue: string | null = null;
   @Input() disabledLabel: string = '';
+  /** Open the dropdown immediately on mount (e.g. inline badge editing). */
+  @Input() autoOpen: boolean = false;
+  /** Emitted whenever the dropdown closes (selection made or dismissed). */
+  @Output() closed = new EventEmitter<void>();
 
   isOpen = false;
 
   constructor(private elementRef: ElementRef) {}
+
+  ngOnInit(): void {
+    if (this.autoOpen) this.isOpen = true;
+  }
 
   get displayText(): string {
     if (!this.value && this.placeholder) return this.placeholder;
@@ -32,20 +40,27 @@ export class CustomSelect {
   }
 
   toggleOpen(): void {
-    this.isOpen = !this.isOpen;
+    if (this.isOpen) this.close();
+    else this.isOpen = true;
   }
 
   select(opt: string): void {
     if (opt === this.disabledValue) return;
     this.value = opt;
     this.valueChange.emit(opt);
+    this.close();
+  }
+
+  private close(): void {
+    if (!this.isOpen) return;
     this.isOpen = false;
+    this.closed.emit();
   }
 
   @HostListener('document:mousedown', ['$event'])
   onDocumentMouseDown(event: MouseEvent): void {
     if (!this.elementRef.nativeElement.contains(event.target)) {
-      this.isOpen = false;
+      this.close();
     }
   }
 }
