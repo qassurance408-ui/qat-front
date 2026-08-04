@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, AfterViewChecked, HostListener, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { marked } from 'marked';
@@ -28,9 +28,20 @@ function generateTicketId(): string {
     /* .markdown rules live in global styles.css so they reach [innerHTML] content. */
     .inlinedit-textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 0.375rem; padding: 0.5rem; font-size: 0.875rem; background: white; outline: none; }
     .inlinedit-textarea:focus { border-color: #94a3b8; box-shadow: 0 0 0 1px #94a3b8; }
+    /* Periodic auto-scroll for a header title that overflows: pause at start,
+       slide left to reveal the end, pause, slide back — looping every ~9s. */
+    .title-marquee.is-scrolling { animation: qatTitleScroll 9s ease-in-out infinite; will-change: transform; }
+    @keyframes qatTitleScroll {
+      0%, 18%   { transform: translateX(0); }
+      44%, 60%  { transform: translateX(var(--marquee-shift, 0px)); }
+      86%, 100% { transform: translateX(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .title-marquee.is-scrolling { animation: none; }
+    }
   `,
 })
-export class TicketDialog implements OnInit {
+export class TicketDialog implements OnInit, AfterViewChecked {
   @Input() ticket: Ticket | null = null;
   /** Whether the parent sheet is currently expanded (mobile). Lets us tell an
    *  "expand" swipe (collapsed) apart from a "scroll content" swipe (expanded). */
@@ -87,7 +98,53 @@ export class TicketDialog implements OnInit {
   private touchCurrentY = 0;
   @ViewChild('dialogBody') private dialogBodyEl!: ElementRef;
 
+  // Header title auto-scroll (only when the title overflows its box)
+  @ViewChild('titleWrap') private titleWrapRef?: ElementRef<HTMLElement>;
+  @ViewChild('titleText') private titleTextRef?: ElementRef<HTMLElement>;
+  titleOverflow = false;
+  titleShiftPx = '0px';
+  private lastMeasuredTitle: string | null = null;
+  private lastWrapWidth = -1;
+
   constructor(private dataService: TicketDataService, private cdr: ChangeDetectorRef) {}
+
+  ngAfterViewChecked(): void {
+    this.measureTitleMarquee();
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.lastWrapWidth = -1; // force a re-measure at the new width
+    this.measureTitleMarquee();
+  }
+
+  /**
+   * Enable the periodic slide only when the header title is wider than its
+   * container. Cached against title + wrap width so this stays cheap in the
+   * per-check lifecycle hook and never loops (a re-check finds no change).
+   */
+  private measureTitleMarquee(): void {
+    const textEl = this.titleTextRef?.nativeElement;
+    const wrapEl = this.titleWrapRef?.nativeElement;
+    if (!textEl || !wrapEl) {
+      if (this.titleOverflow) { this.titleOverflow = false; this.titleShiftPx = '0px'; }
+      this.lastMeasuredTitle = null;
+      return;
+    }
+    const wrapW = wrapEl.clientWidth;
+    if (this.formTitle === this.lastMeasuredTitle && wrapW === this.lastWrapWidth) return;
+    this.lastMeasuredTitle = this.formTitle;
+    this.lastWrapWidth = wrapW;
+
+    const shift = Math.round(textEl.scrollWidth - wrapW);
+    const overflow = shift > 4;
+    const nextShift = overflow ? `-${shift}px` : '0px';
+    if (overflow !== this.titleOverflow || nextShift !== this.titleShiftPx) {
+      this.titleOverflow = overflow;
+      this.titleShiftPx = nextShift;
+      this.cdr.detectChanges();
+    }
+  }
 
   onTouchStart(event: TouchEvent): void {
     if (event.touches.length !== 1) return;
