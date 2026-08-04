@@ -25,19 +25,7 @@ function generateTicketId(): string {
   templateUrl: './ticket-dialog.html',
   styles: `
     :host { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-    .markdown h1, .markdown h2, .markdown h3, .markdown h4 { font-weight: 600; margin-top: 1em; margin-bottom: 0.5em; }
-    .markdown h1 { font-size: 1.25rem; }
-    .markdown h2 { font-size: 1.15rem; }
-    .markdown h3 { font-size: 1.05rem; }
-    .markdown p { margin-bottom: 0.5em; }
-    .markdown ul, .markdown ol { padding-left: 1.5em; margin-bottom: 0.5em; }
-    .markdown li { margin-bottom: 0.25em; }
-    .markdown code { background: #f1f5f9; padding: 0.125em 0.375em; border-radius: 0.25em; font-size: 0.875em; }
-    .markdown pre { background: #f8fafc; padding: 0.75em; border-radius: 0.375em; overflow-x: auto; margin-bottom: 0.5em; }
-    .markdown pre code { background: none; padding: 0; }
-    .markdown blockquote { border-left: 3px solid #e2e8f0; padding-left: 0.75em; color: #64748b; margin-bottom: 0.5em; }
-    .markdown a { color: #475569; text-decoration: underline; }
-    .markdown hr { border-color: #e2e8f0; margin: 0.75em 0; }
+    /* .markdown rules live in global styles.css so they reach [innerHTML] content. */
     .inlinedit-textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 0.375rem; padding: 0.5rem; font-size: 0.875rem; background: white; outline: none; }
     .inlinedit-textarea:focus { border-color: #94a3b8; box-shadow: 0 0 0 1px #94a3b8; }
   `,

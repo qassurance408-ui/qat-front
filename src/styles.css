@@ -59,3 +59,24 @@ body {
   .anim-slideup-enter, .anim-slideup-leave,
   .anim-slide-right-enter, .anim-slide-left-enter { animation: none; }
 }
+
+/* Rendered Markdown (ticket text fields). Global — not component-scoped — so the
+   styles reach HTML injected via [innerHTML], which Angular's emulated view
+   encapsulation would otherwise skip. Also overrides Tailwind's preflight, which
+   strips list bullets and code styling by default. */
+.markdown h1, .markdown h2, .markdown h3, .markdown h4 { font-weight: 600; margin-top: 1em; margin-bottom: 0.5em; }
+.markdown h1 { font-size: 1.25rem; }
+.markdown h2 { font-size: 1.15rem; }
+.markdown h3 { font-size: 1.05rem; }
+.markdown p { margin-bottom: 0.5em; }
+.markdown ul { list-style: disc; padding-left: 1.5em; margin-bottom: 0.5em; }
+.markdown ol { list-style: decimal; padding-left: 1.5em; margin-bottom: 0.5em; }
+.markdown li { margin-bottom: 0.25em; }
+.markdown code { background: #f1f5f9; padding: 0.125em 0.375em; border-radius: 0.25em; font-size: 0.875em; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.markdown pre { background: #f8fafc; padding: 0.75em; border-radius: 0.375em; overflow-x: auto; margin-bottom: 0.5em; }
+.markdown pre code { background: none; padding: 0; }
+.markdown blockquote { border-left: 3px solid #e2e8f0; padding-left: 0.75em; color: #64748b; margin-bottom: 0.5em; }
+.markdown a { color: #475569; text-decoration: underline; }
+.markdown hr { border-color: #e2e8f0; margin: 0.75em 0; }
+.markdown strong { font-weight: 600; }
+.markdown em { font-style: italic; }
